@@ -478,3 +478,309 @@ def _resource_time(
 
     return time_dict
 
+def _resource_grid(
+        nc, 
+        X_name               = None,
+        Y_name               = None, 
+        stopIfNotEqualSpaced = True
+        ):
+    
+    """
+    Extract grid information from a xarray/NetCDF
+
+    Parameters:
+        nc (xarray.DataArray): xarray DataArray from a NetCDF file.
+        X_name (str): The name of the X coordinate variable. If None, it will be extracted from the NetCDF attributes.
+        Y_name (str): The name of the Y coordinate variable. If None, it will be extracted from the NetCDF attributes.
+        stopIfNotEqualSpaced (bool): If True, raise a warning or an exception if the grid cells are not equally spaced (default is True).
+
+    Returns:
+        pandas.DataFrame: A dataframe containing grid information, such as coordinate reference system (CRS), x and y ranges, resolution, number of columns and rows, and top-to-bottom orientation.
+
+    """
+
+    # if X_name is None or Y_name is missing/None
+    if X_name is None or Y_name is None:
+        # get X and Y names from NetCDF attributes
+        atts = dap_xyzv(nc)
+
+        X_name = omit_none(pd.unique(atts["X_name"]))
+        Y_name = omit_none(pd.unique(atts["Y_name"]))
+
+    try:
+        # grid mapping dataframe
+        nc_grid_mapping = pd.DataFrame.from_dict(nc["crs"].attrs, orient = "index").reset_index()
+        # nc_grid_mapping = pd.DataFrame.from_dict(nc["crs"].attrs, orient = "index").reset_index()
+
+        # rename grid mapping columns
+        nc_grid_mapping.columns = ["name", "value"]
+    except:
+        # grid mapping dataframe with no data
+        nc_grid_mapping = pd.DataFrame(columns=["name", "value"])
+
+    # # rename grid mapping columns
+    # nc_grid_mapping.columns = ["name", "value"]
+
+    # check if degree is in units name
+    if try_att(nc, X_name, "units") is not None: 
+        degree  = "degree" in try_att(nc, X_name, "units").lower()
+
+        # if degree, create proj4 string
+        crs_deg = make_proj4_string(
+            nc         = nc, 
+            X_name     = X_name, 
+            Y_name     = Y_name, 
+            is_degrees = degree
+            )
+        
+    else:
+        degree = False
+    
+    # check if any information in grid mapping
+    if len(nc_grid_mapping) == 0:
+        if degree:
+            print("No projection information found.\n"
+            "Coordinate variable units are degrees so,\n"
+            "assuming EPSG:4326")
+            # crs = "EPSG:4326"
+            # crs = crs_deg + ' +init=epsg:4326' 
+            crs = Proj("EPSG:4326", preserve_units=True).to_proj4()
+        else: 
+            warnings.warn("No projection information found in nc file.")
+            # crs = crs_deg + ' +init=epsg:3857' 
+            
+            # crs = Proj("EPSG:3857").to_proj4()
+            # crs = "+proj=lcc +lat_1=25 +lat_2=60 +x_0=0 +y_0=0 +units=m +lat_0=42.5 +lon_0=-100 +a=6378137 +f=0.00335281066474748 +pm=0 +no_defs"
+            crs = None
+    else: 
+        try:
+            crs = CRS.from_cf(nc.crs.attrs).to_wkt()
+            crs = CRS.from_cf(nc.crs.attrs).to_proj4()
+        except Exception as e:
+            crs = None
+            print(f"An exception occurred: {str(e)}")
+        if isinstance(crs, Exception):
+            crs = None
+    
+    # get ncols/nrows from netcdf
+    ncols = nc[X_name].shape[0]
+    nrows = nc[Y_name].shape[0]
+
+    # ncols = nc[X_name].attrs["_ChunkSizes"]
+    # nrows = nc[Y_name].attrs["_ChunkSizes"]
+
+    # if exception is raised when getting X_name values
+    try: 
+        # X_name values
+        xx = nc[X_name].values
+    except Exception as e:
+        xx = None
+        print(f"An exception occurred: {str(e)}")
+
+    # if an exception is raised
+    if isinstance(xx, Exception):
+        xx = list(range(1, ncols+1))
+
+    # subset array removing the last and the first element, then subtract the subarrays
+    rs = xx[:-1] - xx[1:]
+
+    # Check if the minimum and maximum values of rs are equal within the given tolerance
+    are_equal = np.isclose(np.min(rs), np.max(rs), rtol = 0, atol = 0.025 * abs(np.min(rs)))
+    
+    # if not all values are equal within tolerance
+    if not are_equal:
+        # if stopIfNotEqualSpaced is True
+        if stopIfNotEqualSpaced:
+            # throw warning
+            warnings.warn("cells are not equally spaced; you should extract values as points")
+        else:
+            # print a warning
+            raise Exception("cells are not equally spaced; you should extract values as points")
+    
+    # if xx values in degrees and any values are above 180 degrees, subtract 360 from xx
+    if any(xx > 180) and degree:
+        xx = xx -360
+
+    # min/max x values
+    xrange = [xx.min(), xx.max()]
+
+    # x resolution
+    resx = (xrange[1] - xrange[0])/(ncols - 1)
+
+    # X1 value, first value in xx array
+    X1 = xx[0]
+    
+    # Xn value, last value in xx array
+    Xn = xx[-1]
+
+    # if exception is raised when getting X_name values
+    try: 
+        # X_name values
+        yy = nc[Y_name].values
+    except Exception as e:
+        yy = None
+        print(f"An exception occurred: {str(e)}")
+
+    # if an exception is raised
+    if isinstance(yy, Exception):
+        yy = list(range(1, nrows+1))
+
+    # subset array removing the last and the first element, then subtract the subarrays
+    rs = yy[:-1] - yy[1:]
+
+    # Check if the minimum and maximum values of rs are equal within the given tolerance
+    are_equal = np.isclose(np.min(rs), np.max(rs), rtol = 0, atol = 0.025 * abs(np.min(rs)))
+    
+    # if not all values are equal within tolerance
+    if not are_equal:
+        # if stopIfNotEqualSpaced is True
+        if stopIfNotEqualSpaced:
+            # throw warning
+            warnings.warn("cells are not equally spaced; you should extract values as points")
+        else:
+            # print a warning
+            raise Exception("cells are not equally spaced; you should extract values as points")
+    
+    # min/max y values
+    yrange = [yy.min(), yy.max()] 
+
+    # y resolution
+    resy = (yrange[1] - yrange[0])/(nrows - 1)
+
+    # Y1 value, first value in yy array
+    Y1 = yy[0]
+
+    # Yn value, last value in yy array
+    Yn = yy[-1]
+
+    # check make sure first yy array value is greater than last yy array value, otherwise set toptobottom to True
+    if yy[0] > yy[-1]:
+        toptobottom = False
+    else:
+        toptobottom = True
+
+    df = pd.DataFrame({
+        'crs': crs,
+        'X1': X1,
+        'Xn': Xn,
+        'Y1': Y1,
+        'Yn': Yn,
+        'resX': resx,
+        'resY': resy,
+        'ncols': ncols,
+        'nrows': nrows,
+        'toptobottom': toptobottom
+        },
+        index = [0]
+        )
+    
+    return df
+
+
+def read_dap_file(
+        URL = None, 
+        varname = None, 
+        var_spec = None,
+        var_spec_long = None,
+        id = None, 
+        varmeta = True, 
+        stopIfNotEqualSpaced = True
+        ):
+    
+    """
+    Read data from an OpenDAP landing page.
+
+    Parameters:
+        URL (str or list): The URL(s) of the OpenDAP landing page(s) to read data from.
+        varname (str or list): The name(s) of the variable(s) to extract from the OpenDAP dataset. If None, all variables will be extracted.
+        var_spec (str or list): The variable specification(s) used to extract the data. Should match the variable(s) in varname.
+        var_spec_long (str or list): The long variable specification(s) used to extract the data. Should match the variable(s) in varname.
+        id (str): An identifier to associate with the extracted data.
+        varmeta (bool): If True, extract variable metadata along with the data (default is True).
+        stopIfNotEqualSpaced (bool): If True, stop execution if the grid spacing of the dataset is not equal (default is True).
+
+    Returns:
+        pandas.DataFrame: A dataframe containing the extracted data along with associated metadata.
+
+    """
+
+    # check if URL is a list
+    if isinstance(URL, list):
+        pass
+    else:
+        URL = [URL]
+    # empty list to append to
+    raw_list = []
+
+    # test links
+    # i = "http://thredds.northwestknowledge.net:8080/thredds/dodsC/agg_met_pr_1979_CurrentYear_CONUS.nc"
+    # idx = 1
+    
+    for idx, i, in enumerate(URL):
+        if varmeta:
+            print(f'Extracting resource: {i}')
+            print(f'read_dap_file var_spec: {var_spec[idx]}')
+            print(f'read_dap_file var_spec_long: {var_spec_long[idx]}')
+
+        with xr.open_dataset(i, decode_times=False, decode_cf = True, decode_coords = True) as ds:
+            
+            if varname is not None:
+                if isinstance(varname, list):
+                    x = varname[idx]
+                else:
+                    x = varname
+            else:
+                x = varname
+            
+            # get raw data
+            raw = dap_xyzv(
+                ds       = ds,
+                varname  = x, 
+                varmeta       = varmeta,
+                var_spec      = var_spec[idx],
+                var_spec_long = var_spec_long[idx]
+                )
+            
+            raw["URL"] = i
+            raw["id"] = id
+
+            res = _resource_time(
+                nc     = ds, 
+                T_name = raw["T_name"][0]
+                )
+            
+            # add id variable to join on
+            res["id"] = id
+
+            # join raw dimensions and resource time data
+            raw = pd.merge(
+                raw, 
+                pd.DataFrame(res, index = [0]), 
+                on = "id"
+                )
+            
+            X_name = raw["X_name"][0]
+            Y_name = raw["Y_name"][0]
+
+            res_grid = _resource_grid(
+                nc                   = ds, 
+                X_name               = X_name, 
+                Y_name               = Y_name,
+                stopIfNotEqualSpaced = True
+                )
+            
+            # add id variable to join on
+            res_grid["id"] = id
+
+            # join raw data with 
+            raw = pd.merge(raw, res_grid, on = "id")
+
+            # close dataset file
+            ds.close()
+        
+        raw_list.append(raw)
+
+    # concatenate the list of raw dataframes into a single dataframe
+    raw_concat = pd.concat(raw_list)
+    
+    return raw_concat
