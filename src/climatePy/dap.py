@@ -483,3 +483,166 @@ def climatepy_dap(*args, verbose = False, **kwargs):
             print("dap_matches: ", dap_matches)
 
         return dap_matches
+
+def var_to_da(var, dap_row):
+    """Converts a variable to an xarray DataArray with coordinate reference system (CRS).
+
+    Args:
+        var (numpy.ndarray): The variable to be converted to a DataArray.
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray: The variable converted to a DataArray with CRS included.
+
+    """
+
+    # var = get_data(dap_row)
+    # dap_row = dap_row
+
+    # dates = pd.to_datetime(dates)
+    dates = pd.date_range(
+        start   = dap_row['startDate'], 
+        end     = dap_row['endDate'], 
+        periods = dap_row['Tdim']
+        )
+
+    # concatenate variable name with date and model info
+    name = dap_row['variable'] + '_' + dates.strftime('%Y-%m-%d-%H-%M-%S') + '_' + dap_row['model'] + '_' + dap_row['ensemble'] + '_' + dap_row['scenario']
+    name = name.str.replace('_NA', '', regex=False)
+    name = name.str.replace('_na', '', regex=False)
+
+    # extract variable name
+    vars = dap_row['variable']
+
+    # if variable name is NA, use varname
+    if len(vars) == 0:
+        vars = dap_row['varname']
+
+    # clean up timeseries names
+    names_ts = "_".join([vars, dap_row["model"], dap_row["ensemble"], dap_row["scenario"]])
+    names_ts = names_ts.replace("_NA", "")
+    names_ts = names_ts.replace("_na", "")
+    names_ts = names_ts.replace("__", "_")
+    names_ts = names_ts.rstrip("_")
+
+    # if dap_row has 1 column and 1 row, or 1 key/value
+    if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
+        # reshape var into a 2D array
+        var_2d = var.reshape((len(dates), -1))
+
+        # create a dictionary of column names and values
+        var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+        var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+
+        # create a DataFrame with dates and var_dict as columns
+        df = pd.DataFrame({'date': dates, **var_dict})
+
+    # x resolution
+    resx = (dap_row['Xn'] - dap_row['X1'])/(dap_row['ncols'] - 1)
+
+    # y resolution
+    resy = (dap_row['Yn'] - dap_row['Y1'])/(dap_row['nrows'] - 1)
+
+    xmin = dap_row['X1'] - 0.5 * resx
+    xmax = dap_row['Xn'] + 0.5 * resx
+    ymin = dap_row['Y1'] - 0.5 * resy
+    ymax = dap_row['Yn'] + 0.5 * resy
+
+    # expand dimensions of 'var' if it's a 2D array
+    if var.ndim == 2:
+        var = np.expand_dims(var, axis=-1)
+    
+    # check if size of first dimension of 'var' is equals number of rows in 'dap'
+    if var.shape[2] != dap_row["nrows"]:
+        # transpose the first two dimensions of 'var' if not in correct order
+        var = var.transpose(dap_row["Y_name"], dap_row["X_name"], dap_row["T_name"])
+        # var2 = var.transpose(dap_row["T_name"], dap_row["X_name"],  dap_row["Y_name"])
+    
+    # Create the DataArray with the CRS included
+    r = xr.DataArray(
+        var,
+        coords = {
+            'y': -1*np.linspace(ymin, ymax, dap_row['nrows'], endpoint=False),
+            'x': np.linspace(xmin, xmax, dap_row['ncols'], endpoint=False),
+            'time': dates,
+            'crs': dap_row['crs']
+        },
+        dims=['y', 'x', 'time']
+        )
+
+    # if toptobottom is True, flip the data vertically
+    if dap_row['toptobottom']:
+
+        # vertically flip each 2D array
+        flipped_data = np.flip(r.values, axis=0)
+        # flipped_data = np.flipud(r.values)
+
+        # create new xarray DataArray from flipped NumPy array
+        r = xr.DataArray(
+            flipped_data,
+            dims   = ('y', 'x', 'time'),
+            coords = {'y': r.y, 'x': r.x, 'time': r.time}
+            )
+
+    # set the name attribute of the DataArray
+    r = r.assign_coords(time=name)
+
+    return r
+
+def get_data(dap_row):
+    """Internal function for retrieving data from a DAP (Data Access Protocol) source.
+
+    Args:
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray: The retrieved variable data.
+
+    """
+
+    ds = xr.open_dataset(f"{dap_row['URL']}#fillmismatch")
+
+    var = ds[dap_row['varname']]
+
+    ds.close()
+
+    return var
+
+def go_get_dap_data(dap_row):
+
+    """Internal function for retrieving DAP (Data Access Protocol) data and converting it to a DataArray.
+
+    Args:
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray or str: The retrieved data as a DataArray, or the original URL if an error occurred.
+
+    """
+
+    # dap_row = dap_data.iloc[i].to_dict()
+    try:
+        if "http" in dap_row["URL"]:
+            x = var_to_da(var = get_data(dap_row), dap_row = dap_row)
+        else:
+            raise Exception("dap_to_local() not avaliable, yet, dataset URL must be in http format")
+    except Exception as e:
+        return dap_row["URL"]
+    
+    return x
+
+def add_varname_attr(
+        out = None, 
+        dap_data = None, 
+        verbose = True
+        ):
+    
+    for da, varb in zip(out, dap_data["variable"]):
+        if verbose: 
+            print(f'Adding "variable" attribute {varb} to DataArray')
+        da.attrs["variable"] = varb
+
+    for da, varname in zip(out, dap_data["varname"]):
+        if verbose: 
+            print(f'Adding "var" attribute {varname} to DataArray')
+        da.attrs["varname"] = varname
