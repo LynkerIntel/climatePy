@@ -9,6 +9,12 @@ import shapely
 from shapely.ops import transform
 from shapely.geometry import mapping
 import geopandas as gpd
+import xarray as xr
+import rasterio as rio
+import rioxarray as rxr
+from pyproj import CRS, Proj
+# import netCDF4 as 
+import inspect
 
 # data wrangling and manipulation
 import numpy as np
@@ -179,3 +185,760 @@ def parse_date(duration, interval):
 #         return shapely.box(*aoi_box).intersection(cat_box)
 #     except Exception as e:
 #         return None
+
+def dap_crop(
+    URL       = None,
+    catalog   = None,
+    AOI       = None, 
+    startDate = None, 
+    endDate   = None,
+    varname   = None, 
+    verbose   = True
+    ):
+    """Crop a catalog entry to a specified area of interest and time period.
+    
+    Args:
+        URL (str, optional): The URL of the catalog entry. Defaults to None.
+        catalog (pd.DataFrame, optional): The catalog dataframe. Defaults to None.
+        AOI (geopandas.GeoDataFrame, optional): The area of interest for cropping. Defaults to None.
+        startDate (str, optional): The start date of the time period. Defaults to None.
+        endDate (str, optional): The end date of the time period. Defaults to None.
+        varname (str or list, optional): The variable name(s) to filter the catalog. Defaults to None.
+        verbose (bool, optional): Flag to control verbosity of progress messages. Defaults to True.
+        
+	Returns:
+        pd.DataFrame: The cropped catalog entry.
+    """
+    
+    # if a URL is provided, call read_dap_file
+    if URL is not None:
+
+        # stash metadata
+        catvar  = catalog["variable"].values
+        catmod  = catalog["model"].values
+        catens  = catalog["ensemble"].values
+        catsen  = catalog["scenario"].values
+        catcrs  = catalog["crs"].values
+
+        catalog = utils.read_dap_file(
+            URL                  = URL, 
+            varname              = varname,
+            var_spec             = catalog["variable"].values,
+            var_spec_long        = catalog["varname"].values,
+            id                   = "local",
+            varmeta              = verbose, 
+            stopIfNotEqualSpaced = True
+            )
+        
+        # add missing column to catalog
+        catalog["tiled"] = ""
+        catalog["variable"] = catvar
+        catalog["model"]    = catmod
+        catalog["ensemble"] = catens
+        catalog["scenario"] = catsen
+
+        # replace None values in col1 with a string
+        catalog = catalog.fillna({'crs': catcrs[0]})
+
+    # TIME
+    if startDate is None and endDate is None:
+            catalog["T"]    = "[0:1:" + (catalog['nT'] - 1).astype(int).astype(str) + "]"
+            catalog["Tdim"] = catalog["nT"]
+            
+            tmp = [i.split("/") for i in catalog["duration"]]
+            catalog = catalog.assign(startDate = [i[0] for i in tmp], endDate = [i[1] for i in tmp])
+    else:
+        if endDate is None:
+            endDate = startDate
+        
+        # check if its hourly date
+        if any(keyword in catalog['interval'].iloc[0] for keyword in ["hour", "hours"]):
+            startDate += " 00:00:00"
+            endDate   += " 23:00:00"
+
+        # Convert startDate and endDate to pandas Timestamp objects
+        startDate = pd.Timestamp(startDate)
+        endDate   = pd.Timestamp(endDate)
+
+        # out list
+        out = []
+
+        # if interval == "monthly normal" set interval column to "month", otherwise keep interval value
+        catalog.loc[:, "interval"] = np.where(catalog["interval"] == "monthly normal", "month", catalog["interval"])
+        # catalog.loc[:, "interval"] = np.where(catalog["interval"] == "monthly normal", "month", catalog["interval"])
+        
+        # loop over each row of catalog and do date parsing
+        for i in range(len(catalog)): 
+
+            if verbose:
+                print(f'Parsing dates: {i+1}')
+
+            time_steps = parse_date(
+                duration = catalog["duration"].iloc[i], 
+                interval = catalog["interval"].iloc[i]
+                )
+
+            if catalog['nT'].iloc[i] == 1 and not np.isnan(catalog['nT'].iloc[i]):
+                        out.append(pd.concat([
+                                catalog.iloc[[i], :],
+                                pd.DataFrame({
+                                        'T': ['[0:1:0]'],
+                                        'Tdim': [1],
+                                        'startDate': [time_steps[0]],
+                                        'endDate': [time_steps[0]]
+                                })
+                        ], axis=1))
+            elif startDate > max(time_steps) or endDate < min(time_steps):
+                out.append(None)
+                
+            else:
+                T1 = np.argmin(abs(time_steps - startDate))
+                Tn = np.argmin(abs(time_steps - endDate))
+
+                out.append(
+                    pd.concat([catalog.iloc[[i], :].reset_index(drop=True), pd.DataFrame({
+                                                                            'T': [f"[{T1}:1:{Tn}]"],
+                                                                            'Tdim': [(Tn - T1) + 1],
+                                                                            'startDate': [time_steps[T1]],
+                                                                            'endDate': [time_steps[Tn]]
+                                                                            })], axis=1))  
+                                                                
+            # # Concatenate out list of dataframes into single catalog dataframe
+            # catalog = pd.concat(out, axis=0, ignore_index=True)
+
+        # Concatenate out list of dataframes into single catalog dataframe
+        catalog = pd.concat(out, axis=0, ignore_index=True)
+
+        if len(catalog) == 0:
+            raise ValueError(f"Requested Time not found in {set(catalog['duration'])}")
+    
+    # space XY
+    if AOI is None:
+            catalog["X"]    = "[0:1:" + (catalog['ncols'] - 1).astype(int).astype(str) + "]"
+            catalog["Y"]    = "[0:1:" + (catalog['nrows'] - 1).astype(int).astype(str) + "]"
+    else: 
+            # if AOI is given, filter out rows not in AOI bounding box
+            out = []
+
+            # catalog = find_intersects(
+            # 	catalog = catalog,
+            # 	AOI     = AOI
+            # 	)
+
+            # catalog length to track progress
+            n = len(catalog)
+
+            # loop over catalog and filter out rows not in AOI bounding box
+            for i in range(len(catalog)):
+                
+                # print messages if verbose is True
+                if verbose: 
+                    print(f'Filtering out rows not in AOI bounding box: ({i+1}/{n})')
+                
+                # make a bounding box from the catalog row
+                cat_box = utils.make_ext(catalog.iloc[i])
+
+                # make a bounding box from the AOI and reproject to catalog crs
+                aoi_box = AOI.to_crs(catalog["crs"].iloc[0])['geometry'][0].bounds
+
+                # try to intersect the bounding boxes, if it fails append None to out list
+                try:
+                    out.append(shapely.box(*aoi_box).intersection(cat_box))
+                except Exception as e:
+                    out.append(None)
+            # out = Parallel(n_jobs=-1)(delayed(go_get_dap_data) (dap_data.iloc[i].to_dict()) for i in range(len(dap_data)))
+            # find the indices of the None values in out and remove the corresponding rows from catalog
+            drops = [i for i, x in enumerate(out) if x is None]
+        
+            # drop rows from catalog and remove None values from out list
+            if drops:
+                catalog = catalog.drop(drops)
+                out     = [x for x in out if x is not None]
+
+            # catalog length to track progress
+            n = len(catalog)
+
+            # loop over each row and do X/Y coord mapping
+            for i in range(len(catalog)):
+                # print messages if verbose is True
+                if verbose: 
+                    print(f'Mapping X/Y coords: ({i+1}/{n})')
+
+                X_coords = np.linspace(catalog.iloc[i, catalog.columns.get_loc('X1')], catalog.iloc[i, catalog.columns.get_loc('Xn')], num = int(catalog.iloc[i, catalog.columns.get_loc('ncols')]))
+                
+                Y_coords = np.linspace(catalog.iloc[i, catalog.columns.get_loc('Y1')], catalog.iloc[i, catalog.columns.get_loc('Yn')],  num = int(catalog.iloc[i, catalog.columns.get_loc('nrows')]))
+            
+                ys = [np.argmin(np.abs(Y_coords - out[i].bounds[1])), np.argmin(np.abs(Y_coords - out[i].bounds[3]))]
+                xs = [np.argmin(np.abs(X_coords - out[i].bounds[0])), np.argmin(np.abs(X_coords - out[i].bounds[2]))]
+                
+                catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+
+                catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
+                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
+                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
+                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+                catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
+                catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
+    
+    # DIMENSION ORDER STRINGS
+    first  = catalog['dim_order'].str[0].fillna('T').values[0]
+    second = catalog['dim_order'].str[1].fillna('Y').values[0]
+    third  = catalog['dim_order'].str[2].fillna('X').values[0]
+
+    # properly format URL string for tiled data
+    if catalog['tiled'].str.contains('XY').any():
+        catalog['URL'] = catalog['URL'] + '?' + catalog['varname'] + catalog[first] + catalog[second] + catalog[third]
+    else:
+        catalog['URL'] = catalog['URL'] + '?' + catalog['varname'] + catalog[first] + catalog[second] + catalog[third]
+    
+    # check varname
+    if varname is not None:
+        # check if varname is a str, convert to list if so
+        if isinstance(varname, str):
+            varname = [varname]
+        if varname not in catalog['varname'].unique() and varname not in catalog['variable'].unique():
+            var_list = "\t > ".join(catalog['varname'].unique())
+            raise ValueError(f"variable(s) in resource include:\n\t> {var_list}")
+        
+        catalog['varname'] == varname
+        catalog =  catalog.query("varname == @varname")
+
+    # replace NaN values with None
+    catalog = catalog.replace({np.nan: "NA"})
+
+    # TODO: look into what this does, keep commented out for now
+    # catalog["X"] = None
+    # catalog["Y"] = None
+    # catalog["T"] = None
+
+    return catalog
+
+def dap(
+        URL         = None,
+        catalog     = None,
+        AOI         = None,
+        startDate   = None,
+        endDate     = None,
+        varname     = None,
+        grid        = None,
+        start       = None,
+        end         = None,
+        toptobottom = False,
+        dopar       = True,
+        verbose     = True
+        ):
+        
+        """Get data from a DAP server"""
+
+        if not isinstance(toptobottom, bool):
+
+            # print("Checking if all toptobottom values are Nan...")
+
+            # convert to float to check for nan
+            nan_chk = toptobottom.astype(float)
+
+            # if all toptobottom values are Nan, then make toptobottom False 
+            if np.isnan(np.sum(nan_chk)):
+
+                # print("--> setting toptobottom to False")
+                toptobottom = False
+
+        # else:
+        # 	print("toptobottom is already a boolean")
+        # 	print(f"toptobottom = {toptobottom}")
+
+        # check to make sure URL or catalog is provided
+        if URL is None and catalog is None:
+            raise ValueError("URL or catalog must be provided")
+        
+
+        # check if a single string, if so, make a list of string
+        if isinstance(URL, str):
+            URL = [URL]
+
+        # if URL is None then only use catalog URL column
+        if URL is None:
+            URL = catalog.URL.values.tolist()
+
+        else:
+            # convert Numpy array to list
+            url_lst = catalog.URL.values.tolist()
+
+            # extend list with URL
+            url_lst.extend(URL)
+
+            # set URL to list of URLS
+            URL = url_lst
+
+        # check if "vrt" or "tif" in URL list, or if "vsi" in all of URL list
+        if any([utils.getExtension(i) in ['vrt', "tif"] for i in URL]) or all(["vsi" in i for i in URL]):
+
+            if verbose:
+                print("Getting VRT/TIF data")
+                
+            # get the vrt catalog features for each URL
+            vrt_data = vrt_crop_get(
+                URL         = URL,
+                catalog     = catalog,
+                AOI         = AOI,
+                grid        = grid,
+                varname     = varname,
+                start       = start,
+                end         = end,
+                toptobottom = toptobottom,
+                verbose     = verbose
+                )
+            
+            # # get the vrt catalog features for each URL
+            # vrt_data = vrt_crop_get2(
+            #     URL         = URL,
+            #     catalog     = catalog,
+            #     AOI         = AOI,
+            #     grid        = grid,
+            #     varname     = varname,
+            #     start       = start,
+            #     end         = end,
+            #     toptobottom = toptobottom,
+            #     verbose     = verbose
+            #     )
+            
+            return vrt_data
+
+        else:
+            if verbose:
+                print("Getting DAP data")
+
+            # get the dap catalog features for each URL
+            dap_data = dap_crop(
+                URL       = URL,
+                catalog   = catalog,
+                AOI       = AOI,
+                startDate = startDate,
+                endDate   = endDate,
+                varname   = varname,
+                verbose   = verbose
+                )
+            
+            if dopar:
+                if verbose:
+                    print("Getting DAP data in parallel")
+            else:
+                if verbose:
+                    print("Getting DAP data in serial")
+
+            # get dap data
+            dap_data = dap_get(
+                dap_data = dap_data,
+                dopar    = dopar,
+                verbose  = verbose
+                )
+            
+            return dap_data
+        
+def match_args(func, *args, **kwargs):
+
+    """Match default arguments for a function.
+
+    This function takes a function and a variable number of positional and keyword arguments.
+    It matches the provided arguments with the default arguments of the function signature
+    and returns a dictionary containing the matched arguments.
+
+    Args:
+        func (callable): The function for which arguments need to be matched.
+        *args: Positional arguments that need to be matched with function parameters.
+        **kwargs: Keyword arguments that need to be matched with function parameters.
+
+    Returns:
+        dict: A dictionary containing the matched arguments as key-value pairs.
+
+    """
+    sig = inspect.signature(func)
+    matched_args = {}
+    for k, v in sig.parameters.items():
+            if k in kwargs:
+                    matched_args[k] = kwargs[k]
+            elif args:
+                    matched_args[k] = args[0]
+                    args = args[1:]
+            else:
+                    matched_args[k] = v.default
+    return matched_args
+
+def climatepy_dap(*args, verbose = False, **kwargs):
+
+        """ClimatePy DAP (DAP).
+        
+        This is an internal function that works to take varied argument inputs and appropriatly match 
+        them to climatepy_filter() and dap_crop() functions. 
+        Args:
+            *args: Positional arguments to be matched with parameters of `climatepy_filter` and `dap_crop`.
+            verbose (bool, optional): Whether to print verbose output during DAP operations. Defaults to False.
+            **kwargs: Keyword arguments to be matched with parameters of `climatepy_filter` and `dap_crop`.
+
+        Returns:
+            dict: A dictionary containing the matched arguments for DAP operations.
+
+        """
+
+        # get matching arguments for climatepy_filter function
+        matches1            = match_args(climatepy_filter.climatepy_filter, *args, **kwargs)
+
+        # get catalog from climatepy_filter
+        x = climatepy_filter.climatepy_filter(**matches1)
+
+        # add catalog to list of arguments that'll be passed to dap
+        matches1['catalog'] = x
+
+        # matches1['verbose'] = True
+        matches1['verbose'] = verbose
+        matches1['varname'] = None
+
+        # match arguments for dap_crop function
+        matches2 = match_args(dap_crop, *args, **kwargs)
+
+        # get matching arguments in climatepy_filter and dap_crop
+        dap_matches = {k: matches1[k] for k in matches1 if k in matches2}
+
+        if verbose: 
+            print("dap_matches: ", dap_matches)
+
+        return dap_matches
+
+def var_to_da(var, dap_row):
+    """Converts a variable to an xarray DataArray with coordinate reference system (CRS).
+
+    Args:
+        var (numpy.ndarray): The variable to be converted to a DataArray.
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray: The variable converted to a DataArray with CRS included.
+
+    """
+
+    # var = get_data(dap_row)
+    # dap_row = dap_row
+
+    # dates = pd.to_datetime(dates)
+    dates = pd.date_range(
+        start   = dap_row['startDate'], 
+        end     = dap_row['endDate'], 
+        periods = dap_row['Tdim']
+        )
+
+    # concatenate variable name with date and model info
+    name = dap_row['variable'] + '_' + dates.strftime('%Y-%m-%d-%H-%M-%S') + '_' + dap_row['model'] + '_' + dap_row['ensemble'] + '_' + dap_row['scenario']
+    name = name.str.replace('_NA', '', regex=False)
+    name = name.str.replace('_na', '', regex=False)
+
+    # extract variable name
+    vars = dap_row['variable']
+
+    # if variable name is NA, use varname
+    if len(vars) == 0:
+        vars = dap_row['varname']
+
+    # clean up timeseries names
+    names_ts = "_".join([vars, dap_row["model"], dap_row["ensemble"], dap_row["scenario"]])
+    names_ts = names_ts.replace("_NA", "")
+    names_ts = names_ts.replace("_na", "")
+    names_ts = names_ts.replace("__", "_")
+    names_ts = names_ts.rstrip("_")
+
+    # if dap_row has 1 column and 1 row, or 1 key/value
+    if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
+        # reshape var into a 2D array
+        var_2d = var.reshape((len(dates), -1))
+
+        # create a dictionary of column names and values
+        var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+        var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+
+        # create a DataFrame with dates and var_dict as columns
+        df = pd.DataFrame({'date': dates, **var_dict})
+
+    # x resolution
+    resx = (dap_row['Xn'] - dap_row['X1'])/(dap_row['ncols'] - 1)
+
+    # y resolution
+    resy = (dap_row['Yn'] - dap_row['Y1'])/(dap_row['nrows'] - 1)
+
+    xmin = dap_row['X1'] - 0.5 * resx
+    xmax = dap_row['Xn'] + 0.5 * resx
+    ymin = dap_row['Y1'] - 0.5 * resy
+    ymax = dap_row['Yn'] + 0.5 * resy
+
+    # expand dimensions of 'var' if it's a 2D array
+    if var.ndim == 2:
+        var = np.expand_dims(var, axis=-1)
+    
+    # check if size of first dimension of 'var' is equals number of rows in 'dap'
+    if var.shape[2] != dap_row["nrows"]:
+        # transpose the first two dimensions of 'var' if not in correct order
+        var = var.transpose(dap_row["Y_name"], dap_row["X_name"], dap_row["T_name"])
+        # var2 = var.transpose(dap_row["T_name"], dap_row["X_name"],  dap_row["Y_name"])
+    
+    # Create the DataArray with the CRS included
+    r = xr.DataArray(
+        var,
+        coords = {
+            'y': -1*np.linspace(ymin, ymax, dap_row['nrows'], endpoint=False),
+            'x': np.linspace(xmin, xmax, dap_row['ncols'], endpoint=False),
+            'time': dates,
+            'crs': dap_row['crs']
+        },
+        dims=['y', 'x', 'time']
+        )
+
+    # if toptobottom is True, flip the data vertically
+    if dap_row['toptobottom']:
+
+        # vertically flip each 2D array
+        flipped_data = np.flip(r.values, axis=0)
+        # flipped_data = np.flipud(r.values)
+
+        # create new xarray DataArray from flipped NumPy array
+        r = xr.DataArray(
+            flipped_data,
+            dims   = ('y', 'x', 'time'),
+            coords = {'y': r.y, 'x': r.x, 'time': r.time}
+            )
+
+    # set the name attribute of the DataArray
+    r = r.assign_coords(time=name)
+
+    return r
+
+def get_data(dap_row):
+    """Internal function for retrieving data from a DAP (Data Access Protocol) source.
+
+    Args:
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray: The retrieved variable data.
+
+    """
+
+    ds = xr.open_dataset(f"{dap_row['URL']}#fillmismatch")
+
+    var = ds[dap_row['varname']]
+
+    ds.close()
+
+    return var
+
+def go_get_dap_data(dap_row):
+
+    """Internal function for retrieving DAP (Data Access Protocol) data and converting it to a DataArray.
+
+    Args:
+        dap_row (pandas.Series): A pandas Series containing metadata information.
+
+    Returns:
+        xarray.DataArray or str: The retrieved data as a DataArray, or the original URL if an error occurred.
+
+    """
+
+    # dap_row = dap_data.iloc[i].to_dict()
+    try:
+        if "http" in dap_row["URL"]:
+            x = var_to_da(var = get_data(dap_row), dap_row = dap_row)
+        else:
+            raise Exception("dap_to_local() not avaliable, yet, dataset URL must be in http format")
+    except Exception as e:
+        return dap_row["URL"]
+    
+    return x
+
+def add_varname_attr(
+        out = None, 
+        dap_data = None, 
+        verbose = True
+        ):
+    
+    for da, varb in zip(out, dap_data["variable"]):
+        if verbose: 
+            print(f'Adding "variable" attribute {varb} to DataArray')
+        da.attrs["variable"] = varb
+
+    for da, varname in zip(out, dap_data["varname"]):
+        if verbose: 
+            print(f'Adding "var" attribute {varname} to DataArray')
+        da.attrs["varname"] = varname
+
+def merge_across_time(data_arrays, verbose = False):
+
+    """Merge DataArrays across time"""
+
+    if verbose:
+        print("Merging DataArrays across time")
+
+    # create a dictionary to store DataArrays for each unique variable_name
+    da_dict = {}
+
+    n = len(data_arrays)
+
+    for idx, val in enumerate(data_arrays):
+        variable_name = val.attrs.get('variable', 'unknown')
+        # print("Iterating through list of DataArrays: ", variable_name, "-", idx+1, "/", len(data_arrays), " DataArrays")
+
+        if verbose:
+            print(f"Iterating through list of DataArrays: {variable_name} - ({idx+1}/{n})")
+            # print("Iterating through list of DataArrays: ", variable_name)
+
+        if variable_name not in da_dict:
+            if verbose:
+                print("----> variable ", variable_name, "NOT IN da_dict")
+                # print("variable NOT IN da_dict adding dataarray list with key: ", variable_name)
+            da_dict[variable_name] = [val]
+        else:
+            if verbose:
+                print("----> variable ", variable_name, "IN da_dict")
+                # print("variable IN da_dict, appending data array to key: ", variable_name)
+            da_dict[variable_name].append(val)
+
+    # for da in data_arrays:
+    #     variable_name = da.attrs.get('variable_name', 'unknown')
+    #     if variable_name not in da_dict:
+    #         da_dict[variable_name] = [da]
+    #     else:
+    #         da_dict[variable_name].append(da)
+
+    # concatenate DataArrays for each unique variable_name
+    concat_da = []
+    for variable_name, da_list in da_dict.items():
+
+        if verbose:
+            print("--> concatenating time dims: ", variable_name)
+
+        # concatenate DataArrays along the time dimension
+        cda = xr.concat(da_list, dim='time')
+
+        # add variable_name as an attribute to the concatenated DataArray
+        cda.attrs['variable'] = variable_name
+
+        # add the concatenated DataArray to the list of output DataArrays
+        concat_da.append(cda)
+
+    return concat_da
+
+def dap_get(dap_data, dopar = True, varname = None, verbose = False):
+
+    """Get DAP resource data"""
+    # check if varname is in dap_data
+    if varname is not None:
+        if varname not in dap_data["varname"].values and varname not in dap_data["variable"].values:
+        # if varname not in dap_data['varname'].unique() and varname not in dap_data['variable'].unique():
+            errstr = "\t > ".join(dap_data["varname"].unique())
+            raise ValueError(f'variable(s) in resource include:\n\t > {errstr}' )
+        
+        # filter done dap_data to only include varname if varname is None
+        dap_data = dap_data[
+            (dap_data.get("varname", False) == varname) |
+            (dap_data.get("variable", False) == varname)
+            ]
+        
+    if dopar:
+        # make go_get_dap_data calls in parallel
+        out = Parallel(n_jobs=-1)(delayed(go_get_dap_data) (dap_data.iloc[i].to_dict()) for i in range(len(dap_data)))
+        # out_lst = [go_get_dap_data(dap_row = dap_data.iloc[i].to_dict()) for i in range(len(dap_data))]
+    else:
+        # store output list 
+        out = []
+        # get number of rows in dap_data
+        n = len(dap_data)
+        # # next is to loop over each row in dap_data and call go_get_dap_data
+        for i in range(len(dap_data)):
+            if verbose:
+                print(f'Getting dap data: ({i+1}/{n})')
+
+            x = go_get_dap_data(dap_row = dap_data.iloc[i].to_dict())
+            out.append(x)
+    
+    # add variable name attribute to each DataArray in the output list
+    add_varname_attr(
+        out      = out,
+        dap_data = dap_data, 
+        verbose  = verbose
+        )
+    
+    # merqge across time
+    out = merge_across_time(data_arrays = out, verbose = verbose)
+    
+    # concatenated_da = xr.concat(data_arrays, dim=('time', "variable_name"))
+
+    # TODO: USE THIS LIST COMPREHENSION, standard for loop is easier for debugging
+    # next is to loop over each row in dap_data and call go_get_dap_data
+    # out = [go_get_dap_data(dap_data.iloc[x].to_dict()) for x in range(len(dap_data))]
+    # out = [go_get_dap_data(dap_data.iloc[x]) for x in range(len(dap_data))]
+
+    # get data names
+    out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['variable'].tolist()]))
+    # out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['varname'].tolist()]))
+
+    # out_names = list(set([name.replace("_$", "") for name in dap_data["varname"]]))
+    # df['varname'].unique().tolist()
+
+    # df['varname'].map(lambda x: re.sub('_$','',x))
+    # # create a dictionary with the data
+    # data = {'varname': ['prcp', 'tmax', 'prcp', "_$prcp"]}
+    # df = pd.DataFrame(data)
+    # list(dict.fromkeys([name.replace("_$", "") for name in df['varname'].tolist()]))
+    # out_names = [name.replace("_$", "") for name in dap_data["varname"]]
+    # out_names = dap_data['varname'].str.replace('_$', '').tolist()
+
+    # put list and names into a dictionary
+    out = dict(zip(out_names, out))
+
+    # Check if first DataArray is not a SpatRaster
+    if not isinstance(out[next(iter(out))], xr.core.dataarray.DataArray):
+        if verbose:
+            print("Processing non DataArray data...")
+
+        # out = list(out.values())
+        # out = xr.merge(out, join="outer")
+        # out = reduce(lambda dtf1, dtf2: dtf1.merge(dtf2, on="date", how="outer"), out)
+
+        return out
+    
+    elif any(dap_data["tiled"].str.contains("XY")):
+        if verbose:
+            print("Processing 'XY' data...")
+
+        ll = {}
+        u = np.unique([da.units for da in out])
+
+        if len(u) == 1:
+            out = xr.combine_by_coords(out)
+            out["units"] = (["layer"], [u[0]] * len(out["layer"]))
+            ll[dap["varname"].iloc[0]] = out
+            out = ll
+
+            return out
+        else:
+            # out = dict(zip(out_names, out))
+            return out
+
+    elif any(dap_data["tiled"] == "T"):
+
+        print("Processing 'T' data...")
+
+        # out = xr.concat(out, dim="time").sortby("time")
+        return out
+    else:
+        if verbose:
+            print("Processing as normal...")
+        
+        return out
+
+    return out
+
+def do_dap(catalog, AOI, varname, verbose):
+        dap_data = dap(
+            catalog = catalog,
+            AOI     = AOI,
+            verbose = verbose
+            )
+        return dap_data[varname]
