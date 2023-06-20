@@ -414,7 +414,128 @@ def dap_crop(
 
     return catalog
 
+def dap(
+        URL         = None,
+        catalog     = None,
+        AOI         = None,
+        startDate   = None,
+        endDate     = None,
+        varname     = None,
+        grid        = None,
+        start       = None,
+        end         = None,
+        toptobottom = False,
+        dopar       = True,
+        verbose     = True
+        ):
+        
+        """Get data from a DAP server"""
 
+        if not isinstance(toptobottom, bool):
+
+            # print("Checking if all toptobottom values are Nan...")
+
+            # convert to float to check for nan
+            nan_chk = toptobottom.astype(float)
+
+            # if all toptobottom values are Nan, then make toptobottom False 
+            if np.isnan(np.sum(nan_chk)):
+
+                # print("--> setting toptobottom to False")
+                toptobottom = False
+
+        # else:
+        # 	print("toptobottom is already a boolean")
+        # 	print(f"toptobottom = {toptobottom}")
+
+        # check to make sure URL or catalog is provided
+        if URL is None and catalog is None:
+            raise ValueError("URL or catalog must be provided")
+        
+
+        # check if a single string, if so, make a list of string
+        if isinstance(URL, str):
+            URL = [URL]
+
+        # if URL is None then only use catalog URL column
+        if URL is None:
+            URL = catalog.URL.values.tolist()
+
+        else:
+            # convert Numpy array to list
+            url_lst = catalog.URL.values.tolist()
+
+            # extend list with URL
+            url_lst.extend(URL)
+
+            # set URL to list of URLS
+            URL = url_lst
+
+        # check if "vrt" or "tif" in URL list, or if "vsi" in all of URL list
+        if any([utils.getExtension(i) in ['vrt', "tif"] for i in URL]) or all(["vsi" in i for i in URL]):
+
+            if verbose:
+                print("Getting VRT/TIF data")
+                
+            # get the vrt catalog features for each URL
+            vrt_data = vrt_crop_get(
+                URL         = URL,
+                catalog     = catalog,
+                AOI         = AOI,
+                grid        = grid,
+                varname     = varname,
+                start       = start,
+                end         = end,
+                toptobottom = toptobottom,
+                verbose     = verbose
+                )
+            
+            # # get the vrt catalog features for each URL
+            # vrt_data = vrt_crop_get2(
+            #     URL         = URL,
+            #     catalog     = catalog,
+            #     AOI         = AOI,
+            #     grid        = grid,
+            #     varname     = varname,
+            #     start       = start,
+            #     end         = end,
+            #     toptobottom = toptobottom,
+            #     verbose     = verbose
+            #     )
+            
+            return vrt_data
+
+        else:
+            if verbose:
+                print("Getting DAP data")
+
+            # get the dap catalog features for each URL
+            dap_data = dap_crop(
+                URL       = URL,
+                catalog   = catalog,
+                AOI       = AOI,
+                startDate = startDate,
+                endDate   = endDate,
+                varname   = varname,
+                verbose   = verbose
+                )
+            
+            if dopar:
+                if verbose:
+                    print("Getting DAP data in parallel")
+            else:
+                if verbose:
+                    print("Getting DAP data in serial")
+
+            # get dap data
+            dap_data = dap_get(
+                dap_data = dap_data,
+                dopar    = dopar,
+                verbose  = verbose
+                )
+            
+            return dap_data
+        
 def match_args(func, *args, **kwargs):
 
     """Match default arguments for a function.
@@ -646,3 +767,178 @@ def add_varname_attr(
         if verbose: 
             print(f'Adding "var" attribute {varname} to DataArray')
         da.attrs["varname"] = varname
+
+def merge_across_time(data_arrays, verbose = False):
+
+    """Merge DataArrays across time"""
+
+    if verbose:
+        print("Merging DataArrays across time")
+
+    # create a dictionary to store DataArrays for each unique variable_name
+    da_dict = {}
+
+    n = len(data_arrays)
+
+    for idx, val in enumerate(data_arrays):
+        variable_name = val.attrs.get('variable', 'unknown')
+        # print("Iterating through list of DataArrays: ", variable_name, "-", idx+1, "/", len(data_arrays), " DataArrays")
+
+        if verbose:
+            print(f"Iterating through list of DataArrays: {variable_name} - ({idx+1}/{n})")
+            # print("Iterating through list of DataArrays: ", variable_name)
+
+        if variable_name not in da_dict:
+            if verbose:
+                print("----> variable ", variable_name, "NOT IN da_dict")
+                # print("variable NOT IN da_dict adding dataarray list with key: ", variable_name)
+            da_dict[variable_name] = [val]
+        else:
+            if verbose:
+                print("----> variable ", variable_name, "IN da_dict")
+                # print("variable IN da_dict, appending data array to key: ", variable_name)
+            da_dict[variable_name].append(val)
+
+    # for da in data_arrays:
+    #     variable_name = da.attrs.get('variable_name', 'unknown')
+    #     if variable_name not in da_dict:
+    #         da_dict[variable_name] = [da]
+    #     else:
+    #         da_dict[variable_name].append(da)
+
+    # concatenate DataArrays for each unique variable_name
+    concat_da = []
+    for variable_name, da_list in da_dict.items():
+
+        if verbose:
+            print("--> concatenating time dims: ", variable_name)
+
+        # concatenate DataArrays along the time dimension
+        cda = xr.concat(da_list, dim='time')
+
+        # add variable_name as an attribute to the concatenated DataArray
+        cda.attrs['variable'] = variable_name
+
+        # add the concatenated DataArray to the list of output DataArrays
+        concat_da.append(cda)
+
+    return concat_da
+
+def dap_get(dap_data, dopar = True, varname = None, verbose = False):
+
+    """Get DAP resource data"""
+    # check if varname is in dap_data
+    if varname is not None:
+        if varname not in dap_data["varname"].values and varname not in dap_data["variable"].values:
+        # if varname not in dap_data['varname'].unique() and varname not in dap_data['variable'].unique():
+            errstr = "\t > ".join(dap_data["varname"].unique())
+            raise ValueError(f'variable(s) in resource include:\n\t > {errstr}' )
+        
+        # filter done dap_data to only include varname if varname is None
+        dap_data = dap_data[
+            (dap_data.get("varname", False) == varname) |
+            (dap_data.get("variable", False) == varname)
+            ]
+        
+    if dopar:
+        # make go_get_dap_data calls in parallel
+        out = Parallel(n_jobs=-1)(delayed(go_get_dap_data) (dap_data.iloc[i].to_dict()) for i in range(len(dap_data)))
+        # out_lst = [go_get_dap_data(dap_row = dap_data.iloc[i].to_dict()) for i in range(len(dap_data))]
+    else:
+        # store output list 
+        out = []
+        # get number of rows in dap_data
+        n = len(dap_data)
+        # # next is to loop over each row in dap_data and call go_get_dap_data
+        for i in range(len(dap_data)):
+            if verbose:
+                print(f'Getting dap data: ({i+1}/{n})')
+
+            x = go_get_dap_data(dap_row = dap_data.iloc[i].to_dict())
+            out.append(x)
+    
+    # add variable name attribute to each DataArray in the output list
+    add_varname_attr(
+        out      = out,
+        dap_data = dap_data, 
+        verbose  = verbose
+        )
+    
+    # merqge across time
+    out = merge_across_time(data_arrays = out, verbose = verbose)
+    
+    # concatenated_da = xr.concat(data_arrays, dim=('time', "variable_name"))
+
+    # TODO: USE THIS LIST COMPREHENSION, standard for loop is easier for debugging
+    # next is to loop over each row in dap_data and call go_get_dap_data
+    # out = [go_get_dap_data(dap_data.iloc[x].to_dict()) for x in range(len(dap_data))]
+    # out = [go_get_dap_data(dap_data.iloc[x]) for x in range(len(dap_data))]
+
+    # get data names
+    out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['variable'].tolist()]))
+    # out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['varname'].tolist()]))
+
+    # out_names = list(set([name.replace("_$", "") for name in dap_data["varname"]]))
+    # df['varname'].unique().tolist()
+
+    # df['varname'].map(lambda x: re.sub('_$','',x))
+    # # create a dictionary with the data
+    # data = {'varname': ['prcp', 'tmax', 'prcp', "_$prcp"]}
+    # df = pd.DataFrame(data)
+    # list(dict.fromkeys([name.replace("_$", "") for name in df['varname'].tolist()]))
+    # out_names = [name.replace("_$", "") for name in dap_data["varname"]]
+    # out_names = dap_data['varname'].str.replace('_$', '').tolist()
+
+    # put list and names into a dictionary
+    out = dict(zip(out_names, out))
+
+    # Check if first DataArray is not a SpatRaster
+    if not isinstance(out[next(iter(out))], xr.core.dataarray.DataArray):
+        if verbose:
+            print("Processing non DataArray data...")
+
+        # out = list(out.values())
+        # out = xr.merge(out, join="outer")
+        # out = reduce(lambda dtf1, dtf2: dtf1.merge(dtf2, on="date", how="outer"), out)
+
+        return out
+    
+    elif any(dap_data["tiled"].str.contains("XY")):
+        if verbose:
+            print("Processing 'XY' data...")
+
+        ll = {}
+        u = np.unique([da.units for da in out])
+
+        if len(u) == 1:
+            out = xr.combine_by_coords(out)
+            out["units"] = (["layer"], [u[0]] * len(out["layer"]))
+            ll[dap["varname"].iloc[0]] = out
+            out = ll
+
+            return out
+        else:
+            # out = dict(zip(out_names, out))
+            return out
+
+    elif any(dap_data["tiled"] == "T"):
+
+        print("Processing 'T' data...")
+
+        # out = xr.concat(out, dim="time").sortby("time")
+        return out
+    else:
+        if verbose:
+            print("Processing as normal...")
+        
+        return out
+
+    return out
+
+def do_dap(catalog, AOI, varname, verbose):
+        dap_data = dap(
+            catalog = catalog,
+            AOI     = AOI,
+            verbose = verbose
+            )
+        return dap_data[varname]
