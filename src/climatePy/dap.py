@@ -20,6 +20,9 @@ import inspect
 import numpy as np
 import pandas as pd
 
+# library for parallel processing
+from joblib import Parallel, delayed
+
 # import utils from src.climatePy
 from src.climatePy import climatepy_filter, utils
 
@@ -935,6 +938,95 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
 
     return out
 
+def var_to_rast(var, dap_row):
+
+    # dates = pd.to_datetime(dates)
+    dates = pd.date_range(
+        start   = dap_row['startDate'], 
+        end     = dap_row['endDate'], 
+        periods = dap_row['Tdim']
+        )
+
+    # concatenate variable name with date and model info
+    name = dap_row['variable'] + '_' + dates.strftime('%Y-%m-%d-%H-%M-%S') + '_' + dap_row['model'] + '_' + dap_row['ensemble'] + '_' + dap_row['scenario']
+    name = name.str.replace('_NA', '', regex=False)
+
+    # extract variable name
+    vars = dap_row['variable']
+
+    # if variable name is NA, use varname
+    if len(vars) == 0:
+        vars = dap_row['varname']
+
+    # clean up timeseries names
+    names_ts = "_".join([vars, dap_row["model"], dap_row["ensemble"], dap_row["scenario"]])
+    names_ts = names_ts.replace("_NA", "")
+    names_ts = names_ts.replace("__", "_")
+    names_ts = names_ts.rstrip("_")
+
+    # if dap_row has 1 column and 1 row, or 1 key/value
+    if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
+        # reshape var into a 2D array
+        var_2d = var.reshape((len(dates), -1))
+
+        # create a dictionary of column names and values
+        var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+        var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+
+        # create a DataFrame with dates and var_dict as columns
+        df = pd.DataFrame({'date': dates, **var_dict})
+
+    # x resolution
+    resx = (dap_row['Xn'] - dap_row['X1'])/(dap_row['ncols'] - 1)
+
+    # y resolution
+    resy = (dap_row['Yn'] - dap_row['Y1'])/(dap_row['nrows'] - 1)
+
+    xmin = dap_row['X1'] - 0.5 * resx
+    xmax = dap_row['Xn'] + 0.5 * resx
+    ymin = dap_row['Y1'] - 0.5 * resy
+    ymax = dap_row['Yn'] + 0.5 * resy
+
+    # expand dimensions of 'var' if it's a 2D array
+    if var.ndim == 2:
+        var = np.expand_dims(var, axis=-1)
+
+    # check if size of first dimension of 'var' is equals number of rows in 'dap'
+    if var.shape[2] != dap_row["nrows"]:
+        # transpose the first two dimensions of 'var' if not in correct order
+        var = var.transpose(dap_row["Y_name"], dap_row["X_name"], dap_row["T_name"])
+        # var2 = var.transpose(dap_row["T_name"], dap_row["X_name"],  dap_row["Y_name"])
+
+    # Create the DataArray with the CRS included
+    r = xr.DataArray(
+        var,
+        coords = {
+            'y': -1*np.linspace(ymin, ymax, dap_row['nrows'], endpoint=False),
+            'x': np.linspace(xmin, xmax, dap_row['ncols'], endpoint=False),
+            'time': dates,
+            'crs': dap_row['crs']
+        },
+        dims=['y', 'x', 'time']
+        )
+
+    # if toptobottom is True, flip the data vertically
+    if dap_row['toptobottom']:
+
+        # vertically flip each 2D array
+        flipped_data = np.flip(r.values, axis=1)
+
+        # create new xarray DataArray from flipped NumPy array
+        r = xr.DataArray(
+            flipped_data,
+            dims   = ('y', 'x', 'time'),
+            coords = {'y': r.y, 'x': r.x, 'time': r.time}
+            )
+        
+    # set the name attribute of the DataArray
+    r = r.assign_coords(time=name)
+
+    return r
+
 def do_dap(catalog, AOI, varname, verbose):
         dap_data = dap(
             catalog = catalog,
@@ -942,3 +1034,68 @@ def do_dap(catalog, AOI, varname, verbose):
             verbose = verbose
             )
         return dap_data[varname]
+
+
+def vrt_crop_get(
+        URL         = None, 
+        catalog     = None, 
+        AOI         = None, 
+        grid        = None,
+        varname     = None, 
+        start       = None, 
+        end         = None, 
+        toptobottom = False, 
+        verbose     = True
+        ):
+    
+    """VRT Crop v2"""
+
+    if URL is None:
+        URL = catalog.URL.to_list()
+
+    if verbose:
+        print("Opening VRT from URL: ", URL)
+ 
+    # Area of interest
+    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
+
+    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
+    #                                     AOI  = AOI,
+    #                                     verbose = False
+    #                                     ) for i in URL)
+
+    # check if data needs to be vertically flipped
+    for idx, val in enumerate(catalog['toptobottom']):
+
+        if verbose:
+            print("idx:", idx, "val: ",val)
+
+        if val and not np.isnan(val):
+
+            if verbose:
+                print("Flipping data vertically")
+            # vertically flip each 2D array
+            flipped_data = np.flip(vrts[idx].values, axis=0)
+
+            # stash tags
+            tags = vrts[idx].attrs
+
+            # create new xarray DataArray from flipped NumPy array
+            vrts[idx] = xr.DataArray(
+                flipped_data,
+                dims   = ('y', 'x'),
+                coords = {'y': vrts[idx].y, 'x': vrts[idx].x}
+                )
+            
+            # add tags back to flipped DataArray
+            vrts[idx].attrs = tags
+
+        else:
+            if verbose:
+                print("Not flipping data vertically")
+            # vrts[idx] = np.flip(vrts[idx], axis=0)
+
+    # create dictionary of DataArrays
+    vrts = dict(zip(catalog['variable'], vrts))
+
+    return vrts
