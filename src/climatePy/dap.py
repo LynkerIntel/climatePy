@@ -939,7 +939,18 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
     return out
 
 def var_to_rast(var, dap_row):
+    """
+    Convert a variable to a raster format.
 
+    Args:
+        var (numpy.ndarray): The variable data to convert.
+        dap_row (pandas.Series): A row from the Data Access Protocol (DAP) climate catalog pandas dataframe containing metadata information.
+
+    Returns:
+        xr.DataArray: The converted variable as a DataArray.
+
+    """
+    
     # dates = pd.to_datetime(dates)
     dates = pd.date_range(
         start   = dap_row['startDate'], 
@@ -1036,6 +1047,262 @@ def do_dap(catalog, AOI, varname, verbose):
         return dap_data[varname]
 
 
+def get_nodata(dtype):
+    """Returns the NoData value based on the data type.
+
+    Args:
+        dtype (str): The data type string.
+
+    Returns:
+        The NoData value corresponding to the data type. If the data type is 'int', returns 0. If the data type is 'float',
+        returns np.nan. If the data type is 'uint', returns 0. If the data type is 'complex', returns 0 + 0j. If the data
+        type is 'bool', returns False. For any other data type, returns None.
+    """
+
+    if "int" in dtype:
+        return 0
+    elif "float" in dtype:
+        # return 0.0 if dtype == "float32" or dtype == "float64" else np.nan
+        return np.nan
+    elif "uint" in dtype:
+        return 0
+    elif "complex" in dtype:
+        return 0 + 0j
+    elif "bool" in dtype:
+        return False
+    else:
+        return None
+    
+
+def crop_vrt2(urls, AOI, verbose = False):
+
+    """Crop a VRT to an AOI"""
+
+    # Function for opening a single VRT file with rasterio
+    def crop_vrt_for_url(url, AOI, verbose):
+        
+        with rio.open(url) as src:
+            if verbose: 
+                print('Source tags:', src.tags(1))
+                print("Source desc: ", src.descriptions)
+                print("Source profile: ", src.profile)
+
+            # Reproject the geometry to the CRS of the DataArray
+            AOIv = AOI.to_crs(src.crs, inplace=False)
+
+            # Get the bounding box of your AOI shape
+            bbox = AOIv.geometry.total_bounds
+
+            # Create a polygon object representing the bounding box
+            bounding_box = shapely.geometry.box(bbox[0], bbox[1], bbox[2], bbox[3])
+
+            if verbose:
+                print(" Cropping VRT to bounding box...")
+
+            # check data types and get nodata value
+            dtype   = src.profile['dtype']
+            no_data = get_nodata(dtype)
+
+            print("dtype: ", dtype)
+            print("nodata: ", no_data)
+
+            # out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, invert = False)
+            out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, nodata = no_data, invert = False)
+            out_meta = src.meta
+            out_tags = src.tags(1)
+
+            # if nodata in out_meta, replace nodata value with value used as nodata
+            if 'nodata' in out_meta:
+                out_meta['nodata'] = no_data
+
+            # if nodata in out_tags, replace nodata value with value used as nodata
+            if 'nodata' in out_tags:
+                out_tags['nodata'] = no_data
+
+            # out_image, out_transform = rio.mask.mask(src, AOIv.geometry, crop=True, nodata=np.nan, invert = False)
+            # out_meta = src.meta
+            
+            # close the dataset
+            src.close()
+
+        if out_image.ndim == 3:
+            out_image = out_image.squeeze()
+
+        # bb = AOI.geometry.total_bounds
+        # rio.windows.from_bounds(*bb, out_transform)
+
+        # get height and width of image
+        height = out_image.shape[0]
+        width = out_image.shape[1]
+
+        # get x and y width height indices
+        x_indices = np.arange(width)
+        y_indices = np.arange(height)
+
+        # create meshgrid
+        x_coords, y_coords = np.meshgrid(x_indices, y_indices)
+
+        # get affine transform for coordinates
+        x_coords, y_coords = rio.transform.xy(out_transform, y_coords, x_coords)
+
+        # stack the arrays along a new dimension
+        coords = np.stack((x_coords, y_coords), axis=-1)
+
+        # x and y stacks
+        xn = np.stack((x_coords), axis=-1)
+        yn = np.stack((y_coords), axis=-1)
+
+        # get min and max of x and y
+        xmin = xn.min()
+        xmax = xn.max()
+        ymin = yn.min()
+        ymax = yn.max()
+
+        # # GET CRS
+        # crs = out_meta['crs']
+
+        # create DataArray
+        r = xr.DataArray(
+            out_image,
+            coords={
+                'y': -1*np.linspace(ymin, ymax, height, endpoint=False),
+                'x': np.linspace(xmin, xmax, width, endpoint=False),
+            },
+            dims=['y', 'x']
+        )
+
+        # add tags to attributes of data array
+        for key, value in out_tags.items():
+            r.attrs[key] = value
+
+        # add tags to attributes of data array
+        for key, value in out_meta.items():
+            r.attrs[key] = value
+
+        return r
+    
+
+    # tmp = crop_vrt_for_url(urls[1], AOI, verbose = True)
+    results = Parallel(n_jobs=-1)(delayed(crop_vrt_for_url) (url = i,
+                                            AOI  = AOI,
+                                            verbose = False
+                                            ) for i in urls)
+    
+    return results
+
+def crop_vrt(urls, AOI, verbose = False):
+
+    """Crop a VRT to an AOI"""
+
+    # make empty list to store dataarrays
+    da_lst = []
+
+    # loop over each url
+    for url in urls:
+        with rio.open(url) as src:
+            if verbose: 
+                print('Source tags:', src.tags(1))
+                print("Source desc: ", src.descriptions)
+                print("Source profile: ", src.profile)
+
+            # Reproject the geometry to the CRS of the DataArray
+            AOIv = AOI.to_crs(src.crs, inplace=False)
+
+            # Get the bounding box of your AOI shape
+            bbox = AOIv.geometry.total_bounds
+
+            # Create a polygon object representing the bounding box
+            bounding_box = shapely.geometry.box(bbox[0], bbox[1], bbox[2], bbox[3])
+
+            if verbose:
+                print(" Cropping VRT to bounding box...")
+
+            # check data types and get nodata value
+            dtype   = src.profile['dtype']
+            no_data = get_nodata(dtype)
+
+            print("dtype: ", dtype)
+            print("nodata: ", no_data)
+
+            # out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, invert = False)
+            out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, nodata = no_data, invert = False)
+            out_meta = src.meta
+            out_tags = src.tags(1)
+
+            # if nodata in out_meta, replace nodata value with value used as nodata
+            if 'nodata' in out_meta:
+                out_meta['nodata'] = no_data
+
+            # if nodata in out_tags, replace nodata value with value used as nodata
+            if 'nodata' in out_tags:
+                out_tags['nodata'] = no_data
+
+            # out_image, out_transform = rio.mask.mask(src, AOIv.geometry, crop=True, nodata=np.nan, invert = False)
+            # out_meta = src.meta
+            
+            # close the dataset
+            src.close()
+
+        if out_image.ndim == 3:
+            out_image = out_image.squeeze()
+
+        # bb = AOI.geometry.total_bounds
+        # rio.windows.from_bounds(*bb, out_transform)
+
+        # get height and width of image
+        height = out_image.shape[0]
+        width = out_image.shape[1]
+
+        # get x and y width height indices
+        x_indices = np.arange(width)
+        y_indices = np.arange(height)
+
+        # create meshgrid
+        x_coords, y_coords = np.meshgrid(x_indices, y_indices)
+
+        # get affine transform for coordinates
+        x_coords, y_coords = rio.transform.xy(out_transform, y_coords, x_coords)
+
+        # stack the arrays along a new dimension
+        coords = np.stack((x_coords, y_coords), axis=-1)
+
+        # x and y stacks
+        xn = np.stack((x_coords), axis=-1)
+        yn = np.stack((y_coords), axis=-1)
+
+        # get min and max of x and y
+        xmin = xn.min()
+        xmax = xn.max()
+        ymin = yn.min()
+        ymax = yn.max()
+
+        # # GET CRS
+        # crs = out_meta['crs']
+
+        # create DataArray
+        r = xr.DataArray(
+            out_image,
+            coords={
+                'y': -1*np.linspace(ymin, ymax, height, endpoint=False),
+                'x': np.linspace(xmin, xmax, width, endpoint=False),
+            },
+            dims=['y', 'x']
+        )
+
+        # add tags to attributes of data array
+        for key, value in out_tags.items():
+            r.attrs[key] = value
+
+        # add tags to attributes of data array
+        for key, value in out_meta.items():
+            r.attrs[key] = value
+        # [r.attrs.update({key: value}) for key, value in out_tags.items()]    
+
+        da_lst.append(r)
+        # dataarrays[url] = r
+
+    return da_lst
+
 def vrt_crop_get(
         URL         = None, 
         catalog     = None, 
@@ -1048,54 +1315,196 @@ def vrt_crop_get(
         verbose     = True
         ):
     
-    """VRT Crop v2"""
+    """
+    Crop and process VRT data.
+
+    Args:
+        URL (str or list, optional): The URL(s) of the VRT file(s) to open. If not provided, it is extracted from the catalog.
+        catalog (object, optional): The catalog object containing the URL(s) of the VRT file(s). Required if URL is not provided.
+        AOI (geopandas.GeoDataFrame, optional): The Area of Interest polygon to crop the VRT data to.
+        grid (object, optional): The grid object defining the extent and CRS for cropping and reprojection.
+        varname (str, optional): The name of the variable to select from the VRT data.
+        start (int, optional): The start index for subsetting bands in the VRT data.
+        end (int, optional): The end index for subsetting bands in the VRT data.
+        toptobottom (bool, optional): Whether to flip the data vertically.
+        verbose (bool, optional): Whether to print informative messages during processing.
+
+    Returns:
+        xr.DataArray: The cropped and processed VRT data.
+
+    """
 
     if URL is None:
         URL = catalog.URL.to_list()
 
     if verbose:
         print("Opening VRT from URL: ", URL)
- 
-    # Area of interest
-    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
 
-    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
-    #                                     AOI  = AOI,
-    #                                     verbose = False
-    #                                     ) for i in URL)
+    # Read in each file as a separate DataArray and put them in a list
+    vrts = [xr.open_rasterio(url) for url in URL]
 
-    # check if data needs to be vertically flipped
-    for idx, val in enumerate(catalog['toptobottom']):
+    # Concatenate the DataArrays along the band dimension
+
+    if len(vrts) == 1:
+        vrts = vrts[0]
+    else:
+        vrts = xr.concat(vrts, dim="band")
+    
+    # open VRT
+    # with xr.set_options(keep_attrs=True):
+    # vrts = rxr.open_rasterio(URL[0])
+
+    # index number and name of index for subsetting bands
+    # var_idx = vrts.attrs['long_name'].index(varname.item()) 
+    # var_key = [i for i in vrts.attrs['long_name'] if i == varname.item()]
+
+    # if varname is Not none
+    if varname is not None:
+        
+        # vrts = vrts.isel(band=vrts.attrs['long_name'].index(varname.item()))
+        if "long_name" in vrts.attrs.keys():
+
+            if verbose:
+                print("Selecting varnames")
+            vrts = vrts.sel(band = vrts.attrs['long_name'].index(varname.tolist()[0]))
+
+    # subset by index if non "date" dimension
+    if start is not None and end is None:
+        vrts = vrts.isel(band=start)
+    elif start is not None and end is not None:
+        vrts = vrts.isel(band=slice(start, end))
+
+    if grid is not None:
+        xmin = grid.extent[0]
+        ymin = grid.extent[1]
+        xmax = grid.extent[2]
+        ymax = grid.extent[3]
+
+        # clip vrts to grid extent
+        vrts = vrts.rio.clip_box(xmin, ymin, xmax, ymax)
+        
+        # reproject vrts to grid CRS
+        vrts.rio.write_crs(grid.crs, inplace=True)
+
+        # flag as True if grid is given
+        flag = True
+    else:
+        if (vrts.rio.crs.to_string() is None or vrts.rio.crs.to_string() == "") or all([i in [0, 1, 0, 1] for i in vrts.rio.bounds()]):
+            if verbose:
+                print("Defined URL(s) are aspatial and on a unit grid. Cannot be cropped")
+
+            # flag as False if missing CRS or if bounding box is [0, 1, 0, 1]
+            flag = False
+        else:
+            # flag as True if no grid is given and nothing noteworthy
+            flag = True
+
+    # if an AOI is given and no flagging happens, crop and mask rasters to AOI
+    if AOI is not None and flag:
+
+        # Reproject the geometry to the CRS of the DataArray
+        AOIv = AOI.to_crs(vrts.rio.crs)
+    
+        # reproject AOI to vrts CRS
+        # AOIv = AOI.to_crs(vrts.rio.crs, inplace=False).geometry.apply(lambda x: (x, 1))
 
         if verbose:
-            print("idx:", idx, "val: ",val)
+            print("Cropping/Clipping to AOI")
+        # vrts.rio.
+        # Crop the raster to the extent of the AOI
+        # Crop and mask the DataArray to the polygon
+        vrts = vrts.rio.clip(AOIv.geometry.apply(mapping))
 
-        if val and not np.isnan(val):
+        # dim that is NOT x or y
+        selected_dim = [dim for dim in vrts.dims if dim not in ['x', 'y']][0]
 
-            if verbose:
-                print("Flipping data vertically")
-            # vertically flip each 2D array
-            flipped_data = np.flip(vrts[idx].values, axis=0)
+        if "long_name" in vrts.attrs.keys():
+            # delete extra long_name attributes
+            del vrts.attrs['long_name']
+    
+    # if toptobottom is True, flip the data vertically
+    if toptobottom:
+        
+        # print("Flipping data toptobottom")
+        if verbose:
+            print("Flipping data vertically")
 
-            # stash tags
-            tags = vrts[idx].attrs
+        # vertically flip each 2D array
+        flipped_data = np.flip(vrts.values, axis=0)
 
-            # create new xarray DataArray from flipped NumPy array
-            vrts[idx] = xr.DataArray(
-                flipped_data,
-                dims   = ('y', 'x'),
-                coords = {'y': vrts[idx].y, 'x': vrts[idx].x}
-                )
-            
-            # add tags back to flipped DataArray
-            vrts[idx].attrs = tags
-
-        else:
-            if verbose:
-                print("Not flipping data vertically")
-            # vrts[idx] = np.flip(vrts[idx], axis=0)
-
-    # create dictionary of DataArrays
-    vrts = dict(zip(catalog['variable'], vrts))
+        # create new xarray DataArray from flipped NumPy array
+        vrts = xr.DataArray(
+            flipped_data,
+            dims   = ('band', 'y', 'x'),
+            coords = {'band': vrts[selected_dim], 'y': vrts.y, 'x': vrts.x}
+            # dims   = ('y', 'x', 'time'),
+            # coords = {'y': vrts_crop.y, 'x': vrts_crop.x, 'time': vrts_crop.time}
+            )
+    # vrts.close()
 
     return vrts
+
+
+# def vrt_crop_get2(
+#         URL         = None, 
+#         catalog     = None, 
+#         AOI         = None, 
+#         grid        = None,
+#         varname     = None, 
+#         start       = None, 
+#         end         = None, 
+#         toptobottom = False, 
+#         verbose     = True
+#         ):
+    
+#     """VRT Crop v2"""
+
+#     if URL is None:
+#         URL = catalog.URL.to_list()
+
+#     if verbose:
+#         print("Opening VRT from URL: ", URL)
+ 
+#     # Area of interest
+#     vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
+
+#     # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
+#     #                                     AOI  = AOI,
+#     #                                     verbose = False
+#     #                                     ) for i in URL)
+
+#     # check if data needs to be vertically flipped
+#     for idx, val in enumerate(catalog['toptobottom']):
+
+#         if verbose:
+#             print("idx:", idx, "val: ",val)
+
+#         if val and not np.isnan(val):
+
+#             if verbose:
+#                 print("Flipping data vertically")
+#             # vertically flip each 2D array
+#             flipped_data = np.flip(vrts[idx].values, axis=0)
+
+#             # stash tags
+#             tags = vrts[idx].attrs
+
+#             # create new xarray DataArray from flipped NumPy array
+#             vrts[idx] = xr.DataArray(
+#                 flipped_data,
+#                 dims   = ('y', 'x'),
+#                 coords = {'y': vrts[idx].y, 'x': vrts[idx].x}
+#                 )
+            
+#             # add tags back to flipped DataArray
+#             vrts[idx].attrs = tags
+
+#         else:
+#             if verbose:
+#                 print("Not flipping data vertically")
+#             # vrts[idx] = np.flip(vrts[idx], axis=0)
+
+#     # create dictionary of DataArrays
+#     vrts = dict(zip(catalog['variable'], vrts))
+
+#     return vrts
