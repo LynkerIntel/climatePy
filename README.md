@@ -72,14 +72,22 @@ AOI = gpd.read_file('src/data/boulder_county.gpkg')
 
 The `climatepy_filter()` is one of the core functions of `climatePy` and is used to do the first round of filtering on the base climate catalog.
 
-In progress...
+Here we filter down our climate catalog to gridMET precipitation data for Boulder County, CO.
 
 ```python
 # collect raw meta data
 raw = climatepy_filter.climatepy_filter(
         id        = "gridmet", 
         AOI       = AOI, 
-        varname   = "prcp"
+        varname   = "pr"
         )
 ```
+
+| id  | asset | varname    |
+|-------|-----|---------|
+| gridmet | agg_met_pr_1979_CurrentYear_CONUS  | precipitation_amount   |
+
+### AOI
+![Boulder county](./img/boulder_county_polygon.png)
+
 

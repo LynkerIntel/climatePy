@@ -24,3 +24,5 @@ env/
 *.bak
 
 *.log         #  log files
+
+extras/

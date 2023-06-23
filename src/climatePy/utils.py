@@ -7,6 +7,7 @@ import geopandas as gpd
 import shapely.geometry
 import xarray as xr
 import netCDF4 as nc
+from pyproj import CRS, Proj
 
 # data wrangling and manipulation
 import numpy as np

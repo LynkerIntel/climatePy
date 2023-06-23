@@ -9,11 +9,12 @@ import shapely
 from shapely.ops import transform
 from shapely.geometry import mapping
 import geopandas as gpd
+from rtree import index
 import xarray as xr
 import rasterio as rio
 import rioxarray as rxr
 from pyproj import CRS, Proj
-# import netCDF4 as 
+import netCDF4 as nc
 import inspect
 
 # data wrangling and manipulation
@@ -1046,6 +1047,114 @@ def do_dap(catalog, AOI, varname, verbose):
             )
         return dap_data[varname]
 
+def repeat_durations(start_date, end_date, repeat_count):
+    """Repeat durations between start_date and end_date.
+
+    Args:
+        start_date (str or datetime): Start date of the duration.
+        end_date (str or datetime): End date of the duration.
+        repeat_count (int): Number of times to repeat the durations.
+
+    Returns:
+        list: List of repeated durations in the format 'YYYY-MM-DD/YYYY-MM-DD'.
+    """
+    date_list = pd.date_range(start=start_date, end=end_date, freq='D').tolist()
+    repeated_dates = []
+    for date in date_list:
+        for i in range(repeat_count):
+            repeated_dates.append(date)
+    durs = [f'{i.strftime("%Y-%m-%d")}/{i.strftime("%Y-%m-%d")}' for i in repeated_dates]
+    return durs
+
+def get_prism_daily(AOI, varname, startDate, endDate, verbose):
+
+    """Retrieve PRISM daily climate data.
+
+    Args:
+        AOI (str): Area of interest.
+        varname (str): Variable name.
+        startDate (str or datetime): Start date of the data.
+        endDate (str or datetime): End date of the data.
+        verbose (bool): Verbosity flag.
+
+    Returns:
+        dict: Dictionary containing the retrieved climate data.
+    """
+        
+    # collect raw meta data
+    raw = climatepy_filter.climatepy_filter(
+        id        = "prism_daily", 
+        AOI       = AOI, 
+        varname   = varname,
+        startDate = startDate,
+        endDate   = endDate
+    )
+
+    if endDate is None:
+        endDate = startDate
+
+    # collect varname in correct order
+    varname = raw.varname.unique().tolist()
+
+    # for i in range(len(varname)):
+    #     # make dates for each variable
+    #     pd.date_range(start=startDate, end=endDate, freq='D').tolist()
+    # convert to datetime objects and create date range
+    dates = pd.date_range(start=startDate, end=endDate, freq='D').tolist()
+
+    # create new DataFrame with xx column for each date in dates
+    out = [raw.assign(x=date) for date in dates]
+    
+    # concatenate all DataFrames into a single DataFrame
+    out = pd.concat(out, ignore_index=True)
+
+    # add YYYY column
+    out = out.assign(YYYY=out['x'].apply(lambda x: x.year))
+
+    # convert datetime column to YYYY-MM-DD string format
+    out['x'] = out['x'].dt.strftime('%Y-%m-%d')
+
+    # create a YYYYMMDD column from string date
+    out = out.assign(YYYYMMDD=out['x'].apply(lambda x: x.replace("-", "")))
+
+    # define lambda function to replace substrings in URL column
+    replace_values = lambda x: x['URL'].replace('{YYYY}', str(x['YYYY'])).replace('{YYYYMMDD}', str(x['YYYYMMDD']))
+
+    # apply lambda function to DataFrame
+    out['URL'] = out.apply(replace_values, axis=1)
+
+    # add duration column
+    out['duration'] = repeat_durations(startDate, endDate, len(varname))
+    # out['duration'] = [f'{i.strftime("%Y-%m-%d")}/{i.strftime("%Y-%m-%d")}' for i in dates]
+
+    # from joblib import Parallel, delayed, parallel_backend
+    out_lst = Parallel(n_jobs=-1)(delayed(do_dap) (catalog = out.iloc[[i]], 
+                                                AOI  = AOI,
+                                                varname = out.varname.iloc[i], 
+                                                verbose = False
+                                                ) for i in range(len(out)))
+    # out_lst = []
+    # for i in range(len(out)):
+        
+    #     dap_data = do_dap(
+    #         catalog = out.iloc[[i]],
+    #         AOI     = AOI,
+    #         varname = out.varname.iloc[i],
+    #         verbose = verbose
+    #     )
+        # out_lst.append(dap_data)
+        # out_lst.append(dap_data[out.varname.iloc[i]])
+    
+    out_lst = merge_across_time(out_lst)
+
+    # type(out_lst[0])
+    # get data names
+    out_names = list(dict.fromkeys([name.replace("_$", "") for name in out['variable'].tolist()]))
+
+    # put list and names into a dictionary
+    out = dict(zip(out_names, out_lst))
+
+    return out
 
 def get_nodata(dtype):
     """Returns the NoData value based on the data type.
