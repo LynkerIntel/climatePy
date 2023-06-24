@@ -1424,6 +1424,70 @@ def vrt_crop_get(
         verbose     = True
         ):
     
+    """VRT Crop v2"""
+
+    if URL is None:
+        URL = catalog.URL.to_list()
+
+    if verbose:
+        print("Opening VRT from URL: ", URL)
+ 
+    # Area of interest
+    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
+
+    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
+    #                                     AOI  = AOI,
+    #                                     verbose = False
+    #                                     ) for i in URL)
+
+    # check if data needs to be vertically flipped
+    for idx, val in enumerate(catalog['toptobottom']):
+
+        if verbose:
+            print("idx:", idx, "val: ",val)
+
+        if val and not np.isnan(val):
+
+            if verbose:
+                print("Flipping data vertically")
+            # vertically flip each 2D array
+            flipped_data = np.flip(vrts[idx].values, axis=0)
+
+            # stash tags
+            tags = vrts[idx].attrs
+
+            # create new xarray DataArray from flipped NumPy array
+            vrts[idx] = xr.DataArray(
+                flipped_data,
+                dims   = ('y', 'x'),
+                coords = {'y': vrts[idx].y, 'x': vrts[idx].x}
+                )
+            
+            # add tags back to flipped DataArray
+            vrts[idx].attrs = tags
+
+        else:
+            if verbose:
+                print("Not flipping data vertically")
+            # vrts[idx] = np.flip(vrts[idx], axis=0)
+
+    # create dictionary of DataArrays
+    vrts = dict(zip(catalog['variable'], vrts))
+
+    return vrts
+
+def vrt_crop_get2(
+        URL         = None, 
+        catalog     = None, 
+        AOI         = None, 
+        grid        = None,
+        varname     = None, 
+        start       = None, 
+        end         = None, 
+        toptobottom = False, 
+        verbose     = True
+        ):
+    
     """
     Crop and process VRT data.
 
@@ -1552,68 +1616,3 @@ def vrt_crop_get(
     # vrts.close()
 
     return vrts
-
-
-# def vrt_crop_get2(
-#         URL         = None, 
-#         catalog     = None, 
-#         AOI         = None, 
-#         grid        = None,
-#         varname     = None, 
-#         start       = None, 
-#         end         = None, 
-#         toptobottom = False, 
-#         verbose     = True
-#         ):
-    
-#     """VRT Crop v2"""
-
-#     if URL is None:
-#         URL = catalog.URL.to_list()
-
-#     if verbose:
-#         print("Opening VRT from URL: ", URL)
- 
-#     # Area of interest
-#     vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
-
-#     # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
-#     #                                     AOI  = AOI,
-#     #                                     verbose = False
-#     #                                     ) for i in URL)
-
-#     # check if data needs to be vertically flipped
-#     for idx, val in enumerate(catalog['toptobottom']):
-
-#         if verbose:
-#             print("idx:", idx, "val: ",val)
-
-#         if val and not np.isnan(val):
-
-#             if verbose:
-#                 print("Flipping data vertically")
-#             # vertically flip each 2D array
-#             flipped_data = np.flip(vrts[idx].values, axis=0)
-
-#             # stash tags
-#             tags = vrts[idx].attrs
-
-#             # create new xarray DataArray from flipped NumPy array
-#             vrts[idx] = xr.DataArray(
-#                 flipped_data,
-#                 dims   = ('y', 'x'),
-#                 coords = {'y': vrts[idx].y, 'x': vrts[idx].x}
-#                 )
-            
-#             # add tags back to flipped DataArray
-#             vrts[idx].attrs = tags
-
-#         else:
-#             if verbose:
-#                 print("Not flipping data vertically")
-#             # vrts[idx] = np.flip(vrts[idx], axis=0)
-
-#     # create dictionary of DataArrays
-#     vrts = dict(zip(catalog['variable'], vrts))
-
-#     return vrts
