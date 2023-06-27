@@ -230,6 +230,53 @@ def getGridMET(
 # # gridmet['pr'].plot()
 # plt.show()
 
+# --------------------
+# ---- getGLDAS  ----
+# --------------------
+
+# TODO: ADD GLDAS and need check_rc_files() function 
+# def getGLDAS(
+#         AOI       = None,
+#         varname   = None,
+#         startDate = None, 
+#         endDate   = None, 
+#         model     = None,
+#         verbose   = False
+#         ):
+    
+#     """Get GLDAS Data for an Area of Interest
+
+#     Args:
+#         AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+#         varname (list): Variable name(s) to download.
+#         startDate (str): Start date in the form "YYYY-MM-DD"
+#         endDate (str): End date in the form "YYYY-MM-DD"
+#         model (str): Model to download.
+#         verbose (bool): Print verbose output
+
+#     Returns:
+#         dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+#     """
+
+#     # get matching arguments for climatepy_filter function
+#     dap_meta = dap.climatepy_dap(
+#         AOI       = AOI, 
+#         id        = "GLDAS", 
+#         varname   = varname, 
+#         startDate = startDate, 
+#         endDate   = endDate,
+#         verbose   = verbose
+#         )
+    
+#     # dap_meta['dopar'] = dopar
+
+#     # need to provide dap_meta dictionary object directly as input
+#     dap_data = dap.dap(
+#         **dap_meta
+#         )
+    
+#     return dap_data
+
 # -------------------
 # ---- getDaymet ----
 # -------------------
@@ -773,6 +820,219 @@ def getMACA(
 # maca_day['tasmax'].isel(time=0).plot()
 # plt.show()
 
+# -------------------
+# ---- getCHIRPS ----
+# -------------------
+
+# TODO: too much data is extracted when function is called, need to look into what is going on here with the dap function
+# TODO: currently crashes my computer, even when I try to run on a small AOI and for a short time period
+def getCHIRPS(
+        AOI       = None,
+        varname   = None,
+        startDate = None, 
+        endDate   = None, 
+        verbose   = False
+        ):
+    
+    """Get CHIRPS data for an Area of Interest
+
+    CHIRPS is a global dataset of daily precipitation estimates, with a spatial resolution of 0.05 degrees (~5 km).
+    Currently only monthly data is available.
+
+    Args:
+        AOI (geopandas dataframe, shapely geometry): Area of Interest polygon to extract data for.
+        varname (str): variable name to extract (e.g. tmin).
+        startDate (str): start date of data to be downloaded (YYYY-MM-DD). Default is None.
+        endDate (str): end date of data to be downloaded (YYYY-MM-DD). Default is None.
+        verbose (bool): print verbose output. Default is False.
+    """
+
+    timeRes = "monthly"
+
+    # make sure timeRes is capitalized correctly
+    timeRes = " ".join(word.capitalize() for word in timeRes.split())
+
+    # Regex to capitalize first letter of each word
+    # timeRes = re.sub(r"(^|[[:space:]])([[:alpha:]])",
+    # 	lambda match: match.group(1) + match.group(2).upper(), timeRes)
+
+    # correctly formatted timeRes values
+    good_timeRes = ["Pentad", "Annual", "Daily", "Monthly"]
+
+    # check timeRes argument is valid
+    if timeRes not in good_timeRes:
+        raise ValueError(f"timeRes must be one of: {', '.join(good_timeRes)}")
+
+    # get matching arguments for climatepy_filter function
+    dap_meta = dap.climatepy_dap(
+        AOI       = AOI, 
+        id        = "chirps20Global" + timeRes + "P05", 
+        varname   = varname, 
+        startDate = startDate, 
+        endDate   = endDate,
+        verbose   = verbose
+        )
+
+    # need to provide dap_meta dictionary object directly as input
+    dap_data = dap.dap(
+        **dap_meta
+        )
+    
+    return dap_data
+
+# chirps = getCHIRPS(
+# 	AOI=AOI, 
+# 	varname= "precip",
+# 	startDate="2010-01-01",
+# 	endDate="2010-01-01", 
+# 	verbose=True
+# 	)
+
+# chirps.keys()
+# chirps['precip'].isel(time=0).plot()
+# plt.show()
+
+# chirps = getCHIRPS(
+# 	AOI=AOI, 
+# 	varname= "precip",
+# 	startDate="2010-01-01",
+# 	endDate="2010-05-01", 
+# 	timeRes="Monthly",
+# 	verbose=True
+# 	)
+
+# chirps.keys()
+# chirps['precip'].isel(time=2).plot()
+# plt.show()
+
+# chirps = getCHIRPS(
+# 	AOI=AOI, 
+# 	varname= "precip",
+# 	startDate="2010-01-01",
+# 	endDate="2010-01-01", 
+# 	timeRes="Annual",
+# 	verbose=True
+# 	)
+
+# chirps.keys()
+# chirps['precip'].isel(time=2).plot()
+# plt.show()
+
+
+# -----------------
+# ---- getLOCA ----
+# -----------------
+
+def getLOCA(
+        AOI       = None,
+        varname   = None,
+        startDate = None, 
+        endDate   = None, 
+        model     = 'CCSM4',
+        scenario  = 'rcp45',
+        verbose   = False
+        ):
+    
+    """Get LOCA Climate Data for an Area of Interest
+
+    LOCA is a statistical downscaling technique that uses past history to add improved fine-scale detail to global climate models.
+
+    LOCA has been used to downscale 32 global climate models from the CMIP5 archive at a 1/16th degree spatial resolution, 
+    covering North America from central Mexico through Southern Canada. The historical period is 1950-2005,
+    and there are two future scenarios available: RCP 4.5 and RCP 8.5 over the period 2006-2100 (although some models stop in 2099). 
+    The variables currently available are daily minimum and maximum temperature, and daily precipitation.
+
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (str, list): Variable name(s) to download.
+        startDate (str): Start date in the form "YYYY-MM-DD"
+        endDate (str): End date in the form "YYYY-MM-DD"
+        model (str): Model name. Default is 'CCSM4'.
+        scenario (str): Scenario name. Default is 'rcp45'.
+        verbose (bool): Print verbose output. Default is False.
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+
+    """
+
+    # get matching arguments for climatepy_filter function
+    dap_meta = dap.climatepy_dap(
+        AOI       = AOI, 
+        id        = "loca", 
+        varname   = varname, 
+        startDate = startDate, 
+        endDate   = endDate,
+        model     = model,
+        scenario  = scenario,
+        verbose   = verbose
+        )
+
+    # need to provide dap_meta dictionary object directly as input
+    dap_data = dap.dap(
+        **dap_meta
+        )
+    
+    return dap_data
+
+# loca = getLOCA(
+# 	AOI=AOI, 
+# 	varname= "tasmin",
+# 	startDate="2010-01-01",
+# 	endDate="2010-01-02", 
+# 	verbose=True
+# 	)
+
+# loca.keys()
+# loca['tasmin'].isel(time=0).plot()
+# plt.show()
+
+# --------------------
+# ---- getPolaris ----
+# --------------------
+
+def getPolaris(
+        AOI       = None,
+        varname   = None,
+        verbose   = False
+        ):
+    
+    """Get Polaris Climate Data for an Area of Interest
+
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (str, list): Variable name(s) to download.
+        verbose (bool): Print verbose output. Default is False.
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+
+    """
+
+    # get matching arguments for climatepy_filter function
+    dap_meta = dap.climatepy_dap(
+        AOI       = AOI, 
+        id        = "polaris", 
+        varname   = varname, 
+        verbose   = verbose
+        )
+
+    # need to provide dap_meta dictionary object directly as input
+    dap_data = dap.dap(
+        **dap_meta
+        )
+    
+    return dap_data
+
+# polaris = getPolaris(
+# 	AOI=AOI, 
+# 	varname= "mean alpha 5-15cm",
+# 	# varname = "p95 theta_s 100-200cm",
+# 	verbose=True
+# 	)
+# polaris['mean alpha 5-15cm'].plot()
+# plt.show()
+
 # ---------------------
 # ---- getWordClim ----
 # ---------------------
@@ -1008,3 +1268,104 @@ def getNASADEM(
 # nasadem.keys()
 # nasadem['elevation'].plot()
 # plt.show()
+
+# -------------------------
+# ---- AquaGoesSSTAnom ----
+# -------------------------
+
+def AquaGoesSSTAnom(
+        AOI       = None,
+        varname   = None,
+        startDate = None,
+        endDate   = None,
+        units     = None,
+        verbose   = False
+        ):
+    
+    """Get SST anomolies from AquaGoesSSTAnomC data for an Area of Interest
+
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (str, list): Variable name(s) to download.
+        startDate (str): Start date in "YYYY-MM-DD" format.
+        endDate (str): End date in "YYYY-MM-DD" format.
+        units: temperature units to return data in "C" or "F". Default is "C".
+        verbose (bool): Print verbose output. Default is False.
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+    """	
+
+    if units == None:
+        units = "C"
+    
+    if units not in ["C", "F"]:
+        raise ValueError("units must be either 'C' or 'F'")
+    
+    # get matching arguments for climatepy_filter function
+    dap_meta = dap.climatepy_dap(
+        AOI       = AOI,
+        id        = "aquaGoesSSTAnom" + units,
+        varname   = varname,
+        startDate = startDate,
+        endDate   = endDate,
+        verbose   = verbose
+        )
+    
+    # need to provide dap_meta dictionary object directly as input
+    dap_data = dap.dap(
+        **dap_meta
+        )
+    
+    return dap_data
+
+
+# ------------------
+# ---- getLCMAP ----
+# ------------------
+
+def getLCMAP(
+        AOI       = None,
+        varname   = None,
+        startDate = None, 
+        endDate   = None, 
+        verbose   = False
+        ):
+    
+    """Get LCMAP data for an Area of Interest
+    
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (str, list): Variable name(s) to download.
+        startDate (str): Start date in the form "YYYY-MM-DD"
+        endDate (str): End date in the form "YYYY-MM-DD"
+        verbose (bool): Print verbose output. Default is False.
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+    """	
+
+    # get matching arguments for climatepy_filter function
+    dap_meta = dap.climatepy_dap(
+        AOI       = AOI,
+        id        = "LCMAP",
+        varname   = varname,
+        startDate = startDate,
+        endDate   = endDate,
+        verbose   = verbose
+        )
+    
+    # need to provide dap_meta dictionary object directly as input
+    dap_data = dap.dap(
+        **dap_meta
+        )
+    
+    return dap_data
+
+# lcmap = getLCMAP(
+#     AOI=AOI,
+#     varname="change-magnitude",
+#     startDate="2000-01-01",
+#     endDate="2000-01-02",
+#     verbose=True
+#     )
