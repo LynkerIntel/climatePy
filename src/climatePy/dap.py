@@ -27,169 +27,6 @@ from joblib import Parallel, delayed
 # import utils from src.climatePy
 from src.climatePy import climatepy_filter, utils
 
-def parse_date(duration, interval):
-        """Parse the date range based on the duration and interval.
-
-        Args:
-            duration (str): The duration string in the format "start_date/end_date".
-            interval (str): The interval string specifying the time unit.
-        
-        Returns:
-            pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
-        """
-        
-        # split duration string
-        d = duration.split("/")
-        
-        # if end date is "..", set it to today's date
-        if d[1] == "..":
-                d[1] = datetime.now().strftime("%Y-%m-%d")
-
-        # if interval in ["1 month", "1 months"]:
-        if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
-        # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
-
-        # if interval in ["hour", "hours"]:
-        if any(keyword in interval for keyword in ["hour", "hours"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
-                d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
-
-        # if interval is 31 days, change to 1 month
-        if interval in ["31 days","31.5 days"]:
-            interval = "1 month"
-
-        # if interval is 365, 365.5 days, change to 1 year
-        if interval in ["365 days","365.5 days"]:
-            interval = "1 year"
-
-        interval_map = {
-            "hour": "H",
-            "hours": "H",
-            "minute": "min",
-            "minutes": "min",
-            "second": "S",
-            "seconds": "S",
-            "month": "MS",  # Month Start
-            "months": "MS"  # Month Start
-            }
-        
-        # split interval string
-        interval_type = interval.split(" ")[-1]
-
-        # get frequency from interval_map
-        freq = interval_map.get(interval_type, interval_type[0])
-        
-        # # convert start_date and end_date to pandas Timestamp objects
-        # start_date = pd.Timestamp(d[0])
-        # end_date = pd.Timestamp(d[1])
-        # # calculate the number of days between start and end dates
-        # delta = (end_date - start_date) / (nT - 1)
-        # # generate the date range
-        # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
-
-        return pd.date_range(start=d[0], end=d[1], freq=freq)
-
-# def parse_date2(duration, nT):
-    # duration = catalog["duration"].iloc[i]
-    # interval = catalog["interval"].iloc[i]
-    # nT = catalog["nT"].iloc[i]
-#     d = duration.split("/")
-    
-#     if d[1] == "..":
-#         d[1] = pd.Timestamp.today().strftime("%Y-%m-%d")
-
-#     duration = pd.to_datetime(d[1]) - pd.to_datetime(d[0])
-    
-#     start_date = pd.to_datetime(d[0])
-#     end_date = pd.to_datetime(d[1])
-#     duration_in_days = (end_date - start_date).days
-
-#     # calculate interval in days
-#     interval_in_days = duration_in_days / nT
-# 	interval_in_days = 31
-#     # calculate the number of days to shift the frequency
-#     days_to_shift = (start_date + pd.offsets.MonthBegin(1) - start_date).days
-    
-#     # create frequency string with the offset of days to shift
-#     freq = str(int(interval_in_days)) + 'D'
-#     freq = pd.tseries.offsets.DateOffset(days=days_to_shift) 
-    
-#     # + pd.tseries.offsets.CustomBusinessDay(n=interval_in_days)
-    
-#     return pd.date_range(start=start_date, end=end_date, freq=freq)
-
-# 	interval_in_days = duration / nT
-    
-#     if interval_in_days >= pd.Timedelta(days=365):
-#         freq = 'AS'
-#     elif interval_in_days >= pd.Timedelta(days=30):
-#         freq = 'M'
-#     elif interval_in_days >= pd.Timedelta(days=1):
-#         freq = 'D'
-#     else:
-#         freq = 'H'
-    
-#     return pd.date_range(start=d[0], end=d[1], freq=freq)
-
-# def parse_date2(duration, interval):
-#     d = duration.split("/")
-    
-#     if d[1] == "..":
-#         d[1] = datetime.now().strftime("%Y-%m-%d")
-
-#     # Get the start and end dates
-#     start_date, end_date = map(lambda x: datetime.strptime(x, '%Y-%m-%d'), d)
-
-#     # Set the start date to the first day of the month
-#     start_date = start_date.replace(day=1)
-
-#     if "hour" in interval:
-#         # Truncate the start and end dates to the nearest hour
-#         start_date = start_date.replace(minute=0, second=0)
-#         end_date = end_date.replace(minute=0, second=0)
-        
-#     # interval_map = {
-#     #     "hour": "%H",
-#     #     "hours": "%H",
-#     #     "minute": "%M",
-#     #     "minutes": "%M",
-#     #     "second": "%S",
-#     #     "seconds": "%S",
-#     #     "month": "MS",  # Month Start
-# 	# 	"months": "MS"  # Month Start
-#     # }
-#     interval_map = {
-#         "hour": "H",
-#         "hours": "H",
-#         "minute": "min",
-#         "minutes": "min",
-#         "second": "S",
-#         "seconds": "S",
-#         "month": "MS",  # Month Start
-# 		"months": "MS"  # Month Start
-#     }
-    
-#     interval_type = interval.split(" ")[-1]
-#     print("interval_type: ", interval_type)
-#     freq = interval_map.get(interval_type, interval_type[0])
-#     print("frequency date: ", freq)
-    
-#     return pd.date_range(start=d[0], end=d[1], freq=freq)
-#     # return pd.date_range(start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), freq=freq)
-# def filter_row(i, catalog, AOI):
-#     # make a bounding box from the catalog row
-#     cat_box = make_ext(catalog.iloc[i])
-
-#     # make a bounding box from the AOI and reproject to catalog crs
-#     aoi_box = AOI.to_crs(catalog["crs"].iloc[0])['geometry'][0].bounds
-
-#     # try to intersect the bounding boxes, if it fails append None to out list
-#     try:
-#         return shapely.box(*aoi_box).intersection(cat_box)
-#     except Exception as e:
-#         return None
-
 def dap_crop(
     URL       = None,
     catalog   = None,
@@ -1476,143 +1313,280 @@ def vrt_crop_get(
 
     return vrts
 
-def vrt_crop_get2(
-        URL         = None, 
-        catalog     = None, 
-        AOI         = None, 
-        grid        = None,
-        varname     = None, 
-        start       = None, 
-        end         = None, 
-        toptobottom = False, 
-        verbose     = True
-        ):
-    
-    """
-    Crop and process VRT data.
+def parse_date(duration, interval):
+        """Parse the date range based on the duration and interval.
 
-    Args:
-        URL (str or list, optional): The URL(s) of the VRT file(s) to open. If not provided, it is extracted from the catalog.
-        catalog (object, optional): The catalog object containing the URL(s) of the VRT file(s). Required if URL is not provided.
-        AOI (geopandas.GeoDataFrame, optional): The Area of Interest polygon to crop the VRT data to.
-        grid (object, optional): The grid object defining the extent and CRS for cropping and reprojection.
-        varname (str, optional): The name of the variable to select from the VRT data.
-        start (int, optional): The start index for subsetting bands in the VRT data.
-        end (int, optional): The end index for subsetting bands in the VRT data.
-        toptobottom (bool, optional): Whether to flip the data vertically.
-        verbose (bool, optional): Whether to print informative messages during processing.
-
-    Returns:
-        xr.DataArray: The cropped and processed VRT data.
-
-    """
-
-    if URL is None:
-        URL = catalog.URL.to_list()
-
-    if verbose:
-        print("Opening VRT from URL: ", URL)
-
-    # Read in each file as a separate DataArray and put them in a list
-    vrts = [xr.open_rasterio(url) for url in URL]
-
-    # Concatenate the DataArrays along the band dimension
-
-    if len(vrts) == 1:
-        vrts = vrts[0]
-    else:
-        vrts = xr.concat(vrts, dim="band")
-    
-    # open VRT
-    # with xr.set_options(keep_attrs=True):
-    # vrts = rxr.open_rasterio(URL[0])
-
-    # index number and name of index for subsetting bands
-    # var_idx = vrts.attrs['long_name'].index(varname.item()) 
-    # var_key = [i for i in vrts.attrs['long_name'] if i == varname.item()]
-
-    # if varname is Not none
-    if varname is not None:
+        Args:
+            duration (str): The duration string in the format "start_date/end_date".
+            interval (str): The interval string specifying the time unit.
         
-        # vrts = vrts.isel(band=vrts.attrs['long_name'].index(varname.item()))
-        if "long_name" in vrts.attrs.keys():
-
-            if verbose:
-                print("Selecting varnames")
-            vrts = vrts.sel(band = vrts.attrs['long_name'].index(varname.tolist()[0]))
-
-    # subset by index if non "date" dimension
-    if start is not None and end is None:
-        vrts = vrts.isel(band=start)
-    elif start is not None and end is not None:
-        vrts = vrts.isel(band=slice(start, end))
-
-    if grid is not None:
-        xmin = grid.extent[0]
-        ymin = grid.extent[1]
-        xmax = grid.extent[2]
-        ymax = grid.extent[3]
-
-        # clip vrts to grid extent
-        vrts = vrts.rio.clip_box(xmin, ymin, xmax, ymax)
+        Returns:
+            pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
+        """
         
-        # reproject vrts to grid CRS
-        vrts.rio.write_crs(grid.crs, inplace=True)
-
-        # flag as True if grid is given
-        flag = True
-    else:
-        if (vrts.rio.crs.to_string() is None or vrts.rio.crs.to_string() == "") or all([i in [0, 1, 0, 1] for i in vrts.rio.bounds()]):
-            if verbose:
-                print("Defined URL(s) are aspatial and on a unit grid. Cannot be cropped")
-
-            # flag as False if missing CRS or if bounding box is [0, 1, 0, 1]
-            flag = False
-        else:
-            # flag as True if no grid is given and nothing noteworthy
-            flag = True
-
-    # if an AOI is given and no flagging happens, crop and mask rasters to AOI
-    if AOI is not None and flag:
-
-        # Reproject the geometry to the CRS of the DataArray
-        AOIv = AOI.to_crs(vrts.rio.crs)
-    
-        # reproject AOI to vrts CRS
-        # AOIv = AOI.to_crs(vrts.rio.crs, inplace=False).geometry.apply(lambda x: (x, 1))
-
-        if verbose:
-            print("Cropping/Clipping to AOI")
-        # vrts.rio.
-        # Crop the raster to the extent of the AOI
-        # Crop and mask the DataArray to the polygon
-        vrts = vrts.rio.clip(AOIv.geometry.apply(mapping))
-
-        # dim that is NOT x or y
-        selected_dim = [dim for dim in vrts.dims if dim not in ['x', 'y']][0]
-
-        if "long_name" in vrts.attrs.keys():
-            # delete extra long_name attributes
-            del vrts.attrs['long_name']
-    
-    # if toptobottom is True, flip the data vertically
-    if toptobottom:
+        # split duration string
+        d = duration.split("/")
         
-        # print("Flipping data toptobottom")
-        if verbose:
-            print("Flipping data vertically")
+        # if end date is "..", set it to today's date
+        if d[1] == "..":
+                d[1] = datetime.now().strftime("%Y-%m-%d")
 
-        # vertically flip each 2D array
-        flipped_data = np.flip(vrts.values, axis=0)
+        # if interval in ["1 month", "1 months"]:
+        if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
+        # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
+                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
 
-        # create new xarray DataArray from flipped NumPy array
-        vrts = xr.DataArray(
-            flipped_data,
-            dims   = ('band', 'y', 'x'),
-            coords = {'band': vrts[selected_dim], 'y': vrts.y, 'x': vrts.x}
-            # dims   = ('y', 'x', 'time'),
-            # coords = {'y': vrts_crop.y, 'x': vrts_crop.x, 'time': vrts_crop.time}
-            )
-    # vrts.close()
+        # if interval in ["hour", "hours"]:
+        if any(keyword in interval for keyword in ["hour", "hours"]):
+                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
+                d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
 
-    return vrts
+        # if interval is 31 days, change to 1 month
+        if interval in ["31 days","31.5 days"]:
+            interval = "1 month"
+
+        # if interval is 365, 365.5 days, change to 1 year
+        if interval in ["365 days","365.5 days"]:
+            interval = "1 year"
+
+        interval_map = {
+            "hour": "H",
+            "hours": "H",
+            "minute": "min",
+            "minutes": "min",
+            "second": "S",
+            "seconds": "S",
+            "month": "MS",  # Month Start
+            "months": "MS"  # Month Start
+            }
+        
+        # split interval string
+        interval_type = interval.split(" ")[-1]
+
+        # get frequency from interval_map
+        freq = interval_map.get(interval_type, interval_type[0])
+        
+        # # convert start_date and end_date to pandas Timestamp objects
+        # start_date = pd.Timestamp(d[0])
+        # end_date = pd.Timestamp(d[1])
+        # # calculate the number of days between start and end dates
+        # delta = (end_date - start_date) / (nT - 1)
+        # # generate the date range
+        # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
+
+        return pd.date_range(start=d[0], end=d[1], freq=freq)
+
+# def parse_date2(duration, nT):
+    # duration = catalog["duration"].iloc[i]
+    # interval = catalog["interval"].iloc[i]
+    # nT = catalog["nT"].iloc[i]
+#     d = duration.split("/")
+#     if d[1] == "..":
+#         d[1] = pd.Timestamp.today().strftime("%Y-%m-%d")
+#     duration = pd.to_datetime(d[1]) - pd.to_datetime(d[0])
+#     start_date = pd.to_datetime(d[0])
+#     end_date = pd.to_datetime(d[1])
+#     duration_in_days = (end_date - start_date).days
+
+#     # calculate interval in days
+#     interval_in_days = duration_in_days / nT
+# 	interval_in_days = 31
+#     # calculate the number of days to shift the frequency
+#     days_to_shift = (start_date + pd.offsets.MonthBegin(1) - start_date).days
+    
+#     # create frequency string with the offset of days to shift
+#     freq = str(int(interval_in_days)) + 'D'
+#     freq = pd.tseries.offsets.DateOffset(days=days_to_shift) 
+#     # + pd.tseries.offsets.CustomBusinessDay(n=interval_in_days)
+#     return pd.date_range(start=start_date, end=end_date, freq=freq)
+# 	interval_in_days = duration / nT
+#     if interval_in_days >= pd.Timedelta(days=365):
+#         freq = 'AS'
+#     elif interval_in_days >= pd.Timedelta(days=30):
+#         freq = 'M'
+#     elif interval_in_days >= pd.Timedelta(days=1):
+#         freq = 'D'
+#     else:
+#         freq = 'H'
+#     return pd.date_range(start=d[0], end=d[1], freq=freq)
+
+# def parse_date2(duration, interval):
+#     d = duration.split("/")
+#     if d[1] == "..":
+#         d[1] = datetime.now().strftime("%Y-%m-%d")
+#     # Get the start and end dates
+#     start_date, end_date = map(lambda x: datetime.strptime(x, '%Y-%m-%d'), d)
+
+#     # Set the start date to the first day of the month
+#     start_date = start_date.replace(day=1)
+#     if "hour" in interval:
+#         # Truncate the start and end dates to the nearest hour
+#         start_date = start_date.replace(minute=0, second=0)
+#         end_date = end_date.replace(minute=0, second=0)
+#     # interval_map = {
+#     #     "hour": "%H",
+#     #     "hours": "%H",
+#     #     "minute": "%M",
+#     #     "minutes": "%M",
+#     #     "second": "%S",
+#     #     "seconds": "%S",
+#     #     "month": "MS",  # Month Start
+# 	# 	"months": "MS"  # Month Start
+#     # }
+#     interval_type = interval.split(" ")[-1]
+#     print("interval_type: ", interval_type)
+#     freq = interval_map.get(interval_type, interval_type[0])
+#     print("frequency date: ", freq)
+#     return pd.date_range(start=d[0], end=d[1], freq=freq)
+#     # return pd.date_range(start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), freq=freq)
+# def filter_row(i, catalog, AOI):
+#     # make a bounding box from the catalog row
+#     cat_box = make_ext(catalog.iloc[i])
+#     # make a bounding box from the AOI and reproject to catalog crs
+#     aoi_box = AOI.to_crs(catalog["crs"].iloc[0])['geometry'][0].bounds
+#     # try to intersect the bounding boxes, if it fails append None to out list
+#     try:
+#         return shapely.box(*aoi_box).intersection(cat_box)
+#     except Exception as e:
+#         return None
+
+# def vrt_crop_get2(
+#         URL         = None, 
+#         catalog     = None, 
+#         AOI         = None, 
+#         grid        = None,
+#         varname     = None, 
+#         start       = None, 
+#         end         = None, 
+#         toptobottom = False, 
+#         verbose     = True
+#         ):
+    
+#     """
+#     Crop and process VRT data.
+
+#     Args:
+#         URL (str or list, optional): The URL(s) of the VRT file(s) to open. If not provided, it is extracted from the catalog.
+#         catalog (object, optional): The catalog object containing the URL(s) of the VRT file(s). Required if URL is not provided.
+#         AOI (geopandas.GeoDataFrame, optional): The Area of Interest polygon to crop the VRT data to.
+#         grid (object, optional): The grid object defining the extent and CRS for cropping and reprojection.
+#         varname (str, optional): The name of the variable to select from the VRT data.
+#         start (int, optional): The start index for subsetting bands in the VRT data.
+#         end (int, optional): The end index for subsetting bands in the VRT data.
+#         toptobottom (bool, optional): Whether to flip the data vertically.
+#         verbose (bool, optional): Whether to print informative messages during processing.
+
+#     Returns:
+#         xr.DataArray: The cropped and processed VRT data.
+
+#     """
+
+#     if URL is None:
+#         URL = catalog.URL.to_list()
+
+#     if verbose:
+#         print("Opening VRT from URL: ", URL)
+
+#     # Read in each file as a separate DataArray and put them in a list
+#     vrts = [xr.open_rasterio(url) for url in URL]
+
+#     # Concatenate the DataArrays along the band dimension
+
+#     if len(vrts) == 1:
+#         vrts = vrts[0]
+#     else:
+#         vrts = xr.concat(vrts, dim="band")
+    
+#     # open VRT
+#     # with xr.set_options(keep_attrs=True):
+#     # vrts = rxr.open_rasterio(URL[0])
+
+#     # index number and name of index for subsetting bands
+#     # var_idx = vrts.attrs['long_name'].index(varname.item()) 
+#     # var_key = [i for i in vrts.attrs['long_name'] if i == varname.item()]
+
+#     # if varname is Not none
+#     if varname is not None:
+        
+#         # vrts = vrts.isel(band=vrts.attrs['long_name'].index(varname.item()))
+#         if "long_name" in vrts.attrs.keys():
+
+#             if verbose:
+#                 print("Selecting varnames")
+#             vrts = vrts.sel(band = vrts.attrs['long_name'].index(varname.tolist()[0]))
+
+#     # subset by index if non "date" dimension
+#     if start is not None and end is None:
+#         vrts = vrts.isel(band=start)
+#     elif start is not None and end is not None:
+#         vrts = vrts.isel(band=slice(start, end))
+
+#     if grid is not None:
+#         xmin = grid.extent[0]
+#         ymin = grid.extent[1]
+#         xmax = grid.extent[2]
+#         ymax = grid.extent[3]
+
+#         # clip vrts to grid extent
+#         vrts = vrts.rio.clip_box(xmin, ymin, xmax, ymax)
+        
+#         # reproject vrts to grid CRS
+#         vrts.rio.write_crs(grid.crs, inplace=True)
+
+#         # flag as True if grid is given
+#         flag = True
+#     else:
+#         if (vrts.rio.crs.to_string() is None or vrts.rio.crs.to_string() == "") or all([i in [0, 1, 0, 1] for i in vrts.rio.bounds()]):
+#             if verbose:
+#                 print("Defined URL(s) are aspatial and on a unit grid. Cannot be cropped")
+
+#             # flag as False if missing CRS or if bounding box is [0, 1, 0, 1]
+#             flag = False
+#         else:
+#             # flag as True if no grid is given and nothing noteworthy
+#             flag = True
+
+#     # if an AOI is given and no flagging happens, crop and mask rasters to AOI
+#     if AOI is not None and flag:
+
+#         # Reproject the geometry to the CRS of the DataArray
+#         AOIv = AOI.to_crs(vrts.rio.crs)
+    
+#         # reproject AOI to vrts CRS
+#         # AOIv = AOI.to_crs(vrts.rio.crs, inplace=False).geometry.apply(lambda x: (x, 1))
+
+#         if verbose:
+#             print("Cropping/Clipping to AOI")
+#         # vrts.rio.
+#         # Crop the raster to the extent of the AOI
+#         # Crop and mask the DataArray to the polygon
+#         vrts = vrts.rio.clip(AOIv.geometry.apply(mapping))
+
+#         # dim that is NOT x or y
+#         selected_dim = [dim for dim in vrts.dims if dim not in ['x', 'y']][0]
+
+#         if "long_name" in vrts.attrs.keys():
+#             # delete extra long_name attributes
+#             del vrts.attrs['long_name']
+    
+#     # if toptobottom is True, flip the data vertically
+#     if toptobottom:
+        
+#         # print("Flipping data toptobottom")
+#         if verbose:
+#             print("Flipping data vertically")
+
+#         # vertically flip each 2D array
+#         flipped_data = np.flip(vrts.values, axis=0)
+
+#         # create new xarray DataArray from flipped NumPy array
+#         vrts = xr.DataArray(
+#             flipped_data,
+#             dims   = ('band', 'y', 'x'),
+#             coords = {'band': vrts[selected_dim], 'y': vrts.y, 'x': vrts.x}
+#             # dims   = ('y', 'x', 'time'),
+#             # coords = {'y': vrts_crop.y, 'x': vrts_crop.x, 'time': vrts_crop.time}
+#             )
+#     # vrts.close()
+
+#     return vrts

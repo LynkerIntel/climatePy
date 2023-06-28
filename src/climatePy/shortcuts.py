@@ -16,10 +16,10 @@ from src.climatePy import dap, climatepy_filter, utils
 # AOI    = gpd.read_file('src/data/miami_dade_county.gpkg')
 # AOI    = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
 # AOI    = gpd.read_file('src/data/boulder_county.gpkg')
+
 # ----------------------
 # ---- getTerraClim ----
 # ----------------------
-
 def getTerraClim(
         AOI       = None,
         varname   = None,
@@ -59,21 +59,6 @@ def getTerraClim(
         )
     
     return dap_data
-
-# terrmulti = getTerraClim(
-# 	AOI=AOI, 
-# 	varname = ['tmin', "tmax", "ppt"],
-# 	startDate="2010-01-01",
-# 	endDate="2010-02-03", 
-# 	verbose=True
-# 	)
-
-# terrmulti["tmin"].isel(time=0).plot()
-# plt.show()
-# terrmulti["ppt"].isel(time=0).plot()
-# plt.show()
-# terrmulti["tmax"].isel(time=0).plot()
-# plt.show()
 
 # -----------------------------
 # ---- getTerraClimNormals ----
@@ -145,21 +130,6 @@ def getTerraClimNormals(
 
     return dap_data
 
-
-# terrnorms = getTerraClimNormals(
-# 	AOI=AOI, 
-# 	varname=["tmax", "tmin"],
-# 	month = 6,
-# 	verbose=True
-# 	)
-
-# terrnorms['tmax'].plot()
-# plt.show()
-
-# terrnorms['tmin'].plot()
-# plt.show()
-
-
 # --------------------
 # ---- getGridMET ----
 # --------------------
@@ -207,28 +177,6 @@ def getGridMET(
         )
     
     return dap_data
-
-# gridmet = getGridMET(
-# 	AOI=AOI, 
-# 	varname = ["pr", "rmin", "rmax"],
-#     startDate = "2023-06-01",
-#     endDate = "2023-06-02"
-# 	verbose=True
-# 	)
-# gridmet = getGridMET(
-# 	AOI=AOI, 
-# 	varname = "pr",
-#     startDate = "2023-06-01",
-#     endDate = "2023-06-02",
-# 	verbose=True
-# 	)
-# gridmet.keys()
-# gridmet['pr'].isel(time=0).plot()
-# plt.show()
-
-# gridmet['daily_minimum_relative_humidity'].isel(time=0).plot()
-# # gridmet['pr'].plot()
-# plt.show()
 
 # --------------------
 # ---- getGLDAS  ----
@@ -328,17 +276,6 @@ def getDaymet(
     
     return dap_data
 
-# daymet = getDaymet(
-# 	AOI=AOI, 
-# 	varname = ["prcp", "tmax"],
-# 	startDate="2015-01-01",
-# 	endDate="2016-02-20",
-# 	verbose=True
-# 	)
-# daymet.keys()
-# daymet['tmax'].isel(time=9).plot()
-# plt.show()
-
 # -----------------
 # ---- getBCCA ----
 # -----------------
@@ -391,17 +328,6 @@ def getBCCA(
         )
     
     return dap_data
-
-# bcca = getBCCA(
-# 	AOI=AOI, 
-# 	varname="tasmax",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-05", 
-# 	verbose=True
-# 	)
-# bcca.keys()
-# bcca['tasmax'].isel(time=0).plot()
-# plt.show()
 
 # ------------------
 # ---- getPRISM ----
@@ -529,30 +455,6 @@ def getLivneh(
     
     return dap_data
 
-# livneh_month = getLivneh(
-# 	AOI=AOI, 
-# 	varname="wind",
-# 	startDate="2010-01-01",
-# 	endDate="2010-02-01", 
-# 	timeRes="monthly",
-# 	verbose=True
-# 	)
-
-# livneh_month.keys()
-# livneh_month['wind'].isel(time=0).plot()
-# plt.show()
-
-# livneh_day = getLivneh(
-# 	AOI=AOI, 
-# 	varname="wind",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-05", 
-# 	timeRes="daily",
-# 	verbose=True
-# 	)
-
-# livneh_day['wind'].isel(time=0).plot()
-# plt.show()
 # --------------------------
 # ---- getLivneh_fluxes ----
 # --------------------------
@@ -597,17 +499,6 @@ def getLivneh_fluxes(
     
     return dap_data
 
-# livneh_flux = getLivneh_fluxes(
-# 	AOI=AOI, 
-# 	varname = "Baseflow",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-05", 
-# 	verbose=True
-# 	)
-# livneh_flux.keys()
-# livneh_flux['Baseflow'].isel(time=0).plot()
-# plt.show()
-
 # ----------------
 # ---- getVIC ----
 # ----------------
@@ -642,34 +533,6 @@ def getVIC(
         )
     
     return dap_data
-
-# vic = getVIC(
-#     AOI=AOI, 
-#     model     = 'CCSM4',
-#     scenario  = 'rcp45',
-#     varname = "et",
-#     startDate = '2004-01-01',
-#     endDate   = '2004-08-05',
-#     verbose   = True
-#     )
-
-# vic = getVIC(
-#     AOI=AOI, 
-#     varname = ["baseflow", "et"],
-#     startDate = "2004-01-01",
-#     endDate   = "2005-02-02",
-#     model     = 'ccsm4',
-#     scenario  = 'rcp45',
-#     verbose   = True
-#     )
-
-# vic
-# vic.keys()
-# vic['et'].isel(time=0).plot()
-# plt.show()
-# vic['baseflow'].isel(time=0).plot()
-# plt.show()
-
 
 # ------------------
 # ---- getNLDAS ----
@@ -715,13 +578,6 @@ def getNLDAS(
         )
     
     return dap_data
-
-# nldas = getNLDAS(
-# 	AOI=AOI, 
-# 	startDate = '2004-01-01',
-# 	endDate   = '2004-01-05',
-# 	verbose   = True
-# 	)
 
 # -----------------
 # ---- getMACA ---- 
@@ -781,44 +637,6 @@ def getMACA(
         )
     
     return dap_data
-
-
-# maca_month = getMACA(
-# 	AOI=AOI, 
-# 	# varname= "pr",
-# 	varname= ["pr", "tasmin"],
-# 	startDate="2010-01-01",
-# 	endDate="2010-03-05", 
-# 	timeRes="month",
-# 	# model     = 'NorESM1-M', 
-# 	# scenario  = 'rcp85', 
-# 	verbose=True
-# 	)
-
-# maca_month.keys()
-# maca_month['air_temperature'].isel(time=0).plot()
-# plt.show()
-# maca_month['precipitation'].isel(time=0).plot()
-# plt.show()
-
-# maca_day = getMACA(
-# 	AOI=AOI, 
-# 	# varname= "pr",
-# 	varname= ["tasmin", "pr", "tasmax"],
-# 	startDate="2018-01-01",
-# 	endDate="2018-01-15", 
-# 	timeRes="day",
-# 	# model     = 'NorESM1-M', 
-# 	# scenario  = 'rcp85', 
-# 	verbose=True
-# 	)
-# maca_day.keys()
-# maca_day['pr'].isel(time=0).plot()
-# plt.show()
-# maca_day['tasmin'].isel(time=0).plot()
-# plt.show()
-# maca_day['tasmax'].isel(time=0).plot()
-# plt.show()
 
 # -------------------
 # ---- getCHIRPS ----
@@ -880,45 +698,6 @@ def getCHIRPS(
     
     return dap_data
 
-# chirps = getCHIRPS(
-# 	AOI=AOI, 
-# 	varname= "precip",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-01", 
-# 	verbose=True
-# 	)
-
-# chirps.keys()
-# chirps['precip'].isel(time=0).plot()
-# plt.show()
-
-# chirps = getCHIRPS(
-# 	AOI=AOI, 
-# 	varname= "precip",
-# 	startDate="2010-01-01",
-# 	endDate="2010-05-01", 
-# 	timeRes="Monthly",
-# 	verbose=True
-# 	)
-
-# chirps.keys()
-# chirps['precip'].isel(time=2).plot()
-# plt.show()
-
-# chirps = getCHIRPS(
-# 	AOI=AOI, 
-# 	varname= "precip",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-01", 
-# 	timeRes="Annual",
-# 	verbose=True
-# 	)
-
-# chirps.keys()
-# chirps['precip'].isel(time=2).plot()
-# plt.show()
-
-
 # -----------------
 # ---- getLOCA ----
 # -----------------
@@ -975,18 +754,6 @@ def getLOCA(
     
     return dap_data
 
-# loca = getLOCA(
-# 	AOI=AOI, 
-# 	varname= "tasmin",
-# 	startDate="2010-01-01",
-# 	endDate="2010-01-02", 
-# 	verbose=True
-# 	)
-
-# loca.keys()
-# loca['tasmin'].isel(time=0).plot()
-# plt.show()
-
 # --------------------
 # ---- getPolaris ----
 # --------------------
@@ -1023,15 +790,6 @@ def getPolaris(
         )
     
     return dap_data
-
-# polaris = getPolaris(
-# 	AOI=AOI, 
-# 	varname= "mean alpha 5-15cm",
-# 	# varname = "p95 theta_s 100-200cm",
-# 	verbose=True
-# 	)
-# polaris['mean alpha 5-15cm'].plot()
-# plt.show()
 
 # ---------------------
 # ---- getWordClim ----
@@ -1082,40 +840,6 @@ def getWorldClim(
     
     return dap_data
 
-# # get matching arguments for climatepy_filter function
-# dap_meta = dap.climatepy_dap(
-#     AOI       = AOI,
-#     id        = "wc2.1_5m",
-# 	varname= ["tmax", "tavg"],
-#     startDate = "1990-01-01",
-#     endDate   = "1990-01-01",
-#     verbose   = True
-#     )
-# worldclim = getWorldClim(
-# 	AOI=AOI, 
-# 	varname= ["tmax"],
-# 	date="1990-01-01", 
-# 	res = "5m",
-# 	verbose=True
-# 	)
-
-# worldclim.keys()
-# worldclim['tmax'].plot()
-# plt.show()
-# worldclim = getWorldClim(
-# 	AOI=AOI, 
-# 	varname= ["tmax", "tavg"],
-# 	date="1990-01-01", 
-# 	res = "5m",
-# 	verbose=True
-# 	)
-
-# worldclim.keys()
-# worldclim['tmax'].plot()
-# plt.show()
-# worldclim['tavg'].plot()
-# plt.show()
-
 # ------------------------
 # ---- getISRIC_soils ----
 # ------------------------
@@ -1154,24 +878,6 @@ def getISRIC_soils(
         )
     
     return dap_data
-
-# vert_sg = getSoilGrids(
-#     AOI=AOI,
-#     varname="Vertisols",
-#     verbose=True
-#     )
-# vert_sg.keys()
-# vert_sg['Vertisols'].plot()
-# plt.show()
-
-# sand_sg = getSoilGrids(
-#     AOI=AOI,
-#     varname="sand_60-100cm_mean",
-#     verbose=True
-#     )
-# sand_sg.keys()
-# sand_sg['sand_60-100cm_mean'].plot()
-# plt.show()
 
 # -----------------
 # ---- get3DEP ----
@@ -1217,16 +923,6 @@ def get3DEP(
     
     return dap_data
 
-# usgsdem = get3DEP(
-#     AOI=AOI, 
-#     res= "30m",
-#     verbose=True
-#     )
-
-# usgsdem.keys()
-# usgsdem['elevation'].plot()
-# plt.show()
-
 # --------------------
 # ---- getNASADEM ----
 # --------------------
@@ -1260,15 +956,6 @@ def getNASADEM(
         )
     
     return dap_data
-
-# nasadem = getNASADEM(
-# 	AOI=AOI, 
-# 	verbose=True
-# 	)
-
-# nasadem.keys()
-# nasadem['elevation'].plot()
-# plt.show()
 
 # -------------------------
 # ---- AquaGoesSSTAnom ----
@@ -1362,11 +1049,3 @@ def getLCMAP(
         )
     
     return dap_data
-
-# lcmap = getLCMAP(
-#     AOI=AOI,
-#     varname="change-magnitude",
-#     startDate="2000-01-01",
-#     endDate="2000-01-02",
-#     verbose=True
-#     )

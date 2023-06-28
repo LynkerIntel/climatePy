@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="climatePy",                         # pkg name
-    version="0.0.1.0",                        # ersion
+    version="0.0.1.0",                        # version
     author="Angus Watters",                     # author
     description="A Python package for getting point and gridded climate data by AOI",
     long_description=long_description,      # long description is read from the the readme file
@@ -17,12 +17,12 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],          
-    python_requires='>=3.6',                # minimum python version requirement 
+    python_requires='>=3.6',               # min python version required 
     py_modules=["climatePy"],             #  python package name
     package_dir={'':'climatePy/src'},     #  source code directory of package
     install_requires=['pandas', 'datetime', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 're', 'numpy',
                     'netCDF4', 'joblib'], # dependencies
-    include_package_data=True,
-    package_data={'': ['data/*.csv']}
+    include_package_data=True, 
+    package_data={'': ['data/*.csv']}     # include catalog csv dataset
     # package_data={'src/climatePy': ['src/data/*']}
 )
