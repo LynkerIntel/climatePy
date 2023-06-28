@@ -26,7 +26,14 @@ from joblib import Parallel, delayed
 
 # import utils from src.climatePy
 
-from climatePy import climatepy_filter, utils
+# from climatePy import _utils, climatepy_filter
+# from climatePy import _utils, climatepy_filter
+# from climatePy import _utils, climatepy_filter
+
+import ._utils as utils
+import ._climatepy_filter as climatepy_filter
+# from . import climatepy_filter, utils
+
 # from src.climatePy import climatepy_filter, utils
 
 def dap_crop(
@@ -36,7 +43,7 @@ def dap_crop(
     startDate = None, 
     endDate   = None,
     varname   = None, 
-    verbose   = True
+    verbose   = False
     ):
     """Crop a catalog entry to a specified area of interest and time period.
     
@@ -47,7 +54,7 @@ def dap_crop(
         startDate (str, optional): The start date of the time period. Defaults to None.
         endDate (str, optional): The end date of the time period. Defaults to None.
         varname (str or list, optional): The variable name(s) to filter the catalog. Defaults to None.
-        verbose (bool, optional): Flag to control verbosity of progress messages. Defaults to True.
+        verbose (bool, optional): Flag to control verbosity of progress messages. Defaults to Falser.
         
 	Returns:
         pd.DataFrame: The cropped catalog entry.
@@ -269,7 +276,7 @@ def dap(
         end         = None,
         toptobottom = False,
         dopar       = True,
-        verbose     = True
+        verbose     = False
         ):
         
         """Get data from a DAP server"""
@@ -330,7 +337,7 @@ def dap(
                 start       = start,
                 end         = end,
                 toptobottom = toptobottom,
-                verbose     = verbose
+                verbose     = False
                 )
             
             # # get the vrt catalog features for each URL
@@ -360,21 +367,21 @@ def dap(
                 startDate = startDate,
                 endDate   = endDate,
                 varname   = varname,
-                verbose   = verbose
+                verbose   = False
                 )
             
-            if dopar:
-                if verbose:
-                    print("Getting DAP data in parallel")
-            else:
-                if verbose:
-                    print("Getting DAP data in serial")
+            # if dopar:
+            #     if verbose:
+            #         print("Getting DAP data in parallel")
+            # else:
+            #     if verbose:
+            #         print("Getting DAP data in serial")
 
             # get dap data
             dap_data = dap_get(
                 dap_data = dap_data,
                 dopar    = dopar,
-                verbose  = verbose
+                verbose  = False
                 )
             
             return dap_data
@@ -598,7 +605,7 @@ def go_get_dap_data(dap_row):
 def add_varname_attr(
         out = None, 
         dap_data = None, 
-        verbose = True
+        verbose = False
         ):
     
     for da, varb in zip(out, dap_data["variable"]):
@@ -668,8 +675,23 @@ def merge_across_time(data_arrays, verbose = False):
     return concat_da
 
 def dap_get(dap_data, dopar = True, varname = None, verbose = False):
+    
+    """Get DAP resource data.
 
-    """Get DAP resource data"""
+    Args:
+        dap_data (pandas.DataFrame): A DataFrame containing metadata information for DAP resources.
+        dopar (bool, optional): Flag indicating whether to perform parallel execution. Defaults to True.
+        varname (str, optional): The variable name to filter the DAP resources. Defaults to None.
+        verbose (bool, optional): Flag indicating whether to print verbose output. Defaults to False.
+
+    Returns:
+        dict or xarray.DataArray: A dictionary of DataArrays or a single DataArray, representing the retrieved DAP data.
+
+    Raises:
+        ValueError: If the provided varname is not found in the DAP resources.
+
+    """
+    
     # check if varname is in dap_data
     if varname is not None:
         if varname not in dap_data["varname"].values and varname not in dap_data["variable"].values:
@@ -878,7 +900,7 @@ def var_to_rast(var, dap_row):
 
     return r
 
-def do_dap(catalog, AOI, varname, verbose):
+def do_dap(catalog, AOI, varname, verbose = False):
         dap_data = dap(
             catalog = catalog,
             AOI     = AOI,
@@ -905,7 +927,7 @@ def repeat_durations(start_date, end_date, repeat_count):
     durs = [f'{i.strftime("%Y-%m-%d")}/{i.strftime("%Y-%m-%d")}' for i in repeated_dates]
     return durs
 
-def get_prism_daily(AOI, varname, startDate, endDate, verbose):
+def get_prism_daily(AOI, varname, startDate, endDate, verbose = False):
 
     """Retrieve PRISM daily climate data.
 
@@ -1260,10 +1282,27 @@ def vrt_crop_get(
         start       = None, 
         end         = None, 
         toptobottom = False, 
-        verbose     = True
+        verbose     = False
         ):
     
-    """VRT Crop v2"""
+#     """
+#     Crop and process VRT data.
+
+#     Args:
+#         URL (str or list, optional): The URL(s) of the VRT file(s) to open. If not provided, it is extracted from the catalog.
+#         catalog (object, optional): The catalog object containing the URL(s) of the VRT file(s). Required if URL is not provided.
+#         AOI (geopandas.GeoDataFrame, optional): The Area of Interest polygon to crop the VRT data to.
+#         grid (object, optional): The grid object defining the extent and CRS for cropping and reprojection.
+#         varname (str, optional): The name of the variable to select from the VRT data.
+#         start (int, optional): The start index for subsetting bands in the VRT data.
+#         end (int, optional): The end index for subsetting bands in the VRT data.
+#         toptobottom (bool, optional): Whether to flip the data vertically.
+#         verbose (bool, optional): Whether to print informative messages during processing. Default is False
+
+#     Returns:
+#         xr.DataArray: The cropped and processed VRT data.
+
+#     """
 
     if URL is None:
         URL = catalog.URL.to_list()
@@ -1461,7 +1500,7 @@ def parse_date(duration, interval):
 #         start       = None, 
 #         end         = None, 
 #         toptobottom = False, 
-#         verbose     = True
+#         verbose     = False
 #         ):
     
 #     """

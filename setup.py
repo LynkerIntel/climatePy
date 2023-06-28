@@ -22,7 +22,7 @@ setuptools.setup(
     # package_dir={'':'climatePy/src'},     #  source code directory of package
     # package_dir={'':'src/climatePy'},     #  source code directory of package
     # package_dir={'':'/climatePy'},     #  source code directory of package
-    install_requires=['pandas', 'datetime', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 're', 'numpy',
+    install_requires=['pandas', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 'numpy',
                     'netCDF4', 'joblib'], # dependencies
     include_package_data=True, 
     package_data={'': ['data/*.csv']}     # include catalog csv dataset
