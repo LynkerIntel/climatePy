@@ -14,9 +14,10 @@ from rtree import index
 import pandas as pd
 import numpy as np
 
-# import utils and load_data from climatePy
-from src.climatePy import load_data
-from src.climatePy import utils
+# import utils and params from climatePy
+from climatePy import utils, params
+# from src.climatePy import params
+# from src.climatePy import utils
 
 def find_intersects(catalog, AOI):
     """Check for catalog rows intersecting with the given AOI.
@@ -124,14 +125,14 @@ def climatepy_filter(
     # initialize variables
     variable, description, duration, e, s, URL = [None]*6
 
-    # catalog = load_data()
+    # catalog = params()
 
     # if no ID is given, set catalog to all rows of params, otherwise filter down to ID
     if id is None:
-        catalog = load_data()
+        catalog = params()
         # catalog = params
     else:
-        catalog = load_data()
+        catalog = params()
         catalog = catalog.loc[catalog['id'] == id]
         # catalog = params.loc[params['id'] == id]
 

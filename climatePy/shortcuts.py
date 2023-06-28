@@ -4,14 +4,15 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import shapely
 
-from src.climatePy import dap, climatepy_filter, utils
+# from src.climatePy import dap, climatepy_filter, utils
 
 import xarray as xr
 import matplotlib.pyplot as plt
 
 from shapely.geometry import Point
 
-from src.climatePy import dap, climatepy_filter, utils
+# from src.climatePy import dap, climatepy_filter, utils
+from climatePy import dap, climatepy_filter, utils
 
 # AOI    = gpd.read_file('src/data/miami_dade_county.gpkg')
 # AOI    = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
@@ -95,7 +96,7 @@ def getTerraClimNormals(
 
     # collect raw meta data
     raw = climatepy_filter.climatepy_filter(
-        # params    = load_data(), 
+        # params    = params(), 
         id        = "terraclim_normals", 
         AOI       = AOI, 
         varname   = varname, 

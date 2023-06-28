@@ -25,7 +25,9 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 # import utils from src.climatePy
-from src.climatePy import climatepy_filter, utils
+
+from climatePy import climatepy_filter, utils
+# from src.climatePy import climatepy_filter, utils
 
 def dap_crop(
     URL       = None,
