@@ -959,13 +959,13 @@ def test_getMACA_day_case2(AOI):
     # assert output['pr'].shape == (23, 48, 2)
     # assert output['vpd'].shape == (23, 48, 2)
 
-def test_getUSGSDEM_case1(AOI):
+def test_get3DEP_case1(AOI):
     #  ---- Case 1: 30m DEM ----
     verbose   = True
     res       = '30m'
 
     # Call function to get output
-    output = shortcuts.getUSGSDEM(AOI, res, verbose)
+    output = shortcuts.get3DEP(AOI, res, verbose)
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -985,13 +985,13 @@ def test_getUSGSDEM_case1(AOI):
     
     # assert output['elevation'].shape == (3238, 7078)
 
-def test_getUSGSDEM_case2(AOI):
+def test_get3DEP_case2(AOI):
     #  ---- Case 2: 10m DEM ----
     verbose   = True
     res       = '10m'
 
     # Call function to get output
-    output = shortcuts.getUSGSDEM(AOI, res, verbose)
+    output = shortcuts.get3DEP(AOI, res, verbose)
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -1011,13 +1011,13 @@ def test_getUSGSDEM_case2(AOI):
     
     # assert output['elevation'].shape == (9712, 21231)
 
-def test_getSoilGrids_case1(AOI):
+def test_getISRIC_soils_case1(AOI):
     #  ---- Case 1: Vertisols ----
     verbose   = True
     varname       = 'Vertisols'
 
     # Call function to get output
-    output = shortcuts.getSoilGrids(AOI, varname, verbose)
+    output = shortcuts.getISRIC_soils(AOI, varname, verbose)
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -1038,13 +1038,13 @@ def test_getSoilGrids_case1(AOI):
     # assert output['Vertisols'].shape == (432, 945)
 
 
-def test_getSoilGrids_case2(AOI):
+def test_getISRIC_soils_case2(AOI):
     #  ---- Case 2: Gypsisols ----
     verbose   = True
     varname       = 'Gypsisols'
 
     # Call function to get output
-    output = shortcuts.getSoilGrids(AOI, varname, verbose)
+    output = shortcuts.getISRIC_soils(AOI, varname, verbose)
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -1064,13 +1064,13 @@ def test_getSoilGrids_case2(AOI):
     
     # assert output['Gypsisols'].shape == (432, 945)
 
-def test_getSoilGrids_case3(AOI):
+def test_getISRIC_soils_case3(AOI):
     # ---- Case 3: Multiple variables ----
     verbose   = True
     varname       = ['Vertisols', 'Gypsisols']
 
     # Call function to get output
-    output = shortcuts.getSoilGrids(AOI, varname, verbose)
+    output = shortcuts.getISRIC_soils(AOI, varname, verbose)
 
     # Assert that the output is a dictionary
     assert type(output) == dict

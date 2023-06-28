@@ -1116,11 +1116,12 @@ def getWorldClim(
 # worldclim['tavg'].plot()
 # plt.show()
 
-# ---------------------
-# ---- getWordClim ----
-# ---------------------
+# ------------------------
+# ---- getISRIC_soils ----
+# ------------------------
+# getSoilGrids vs getISRIC_soils
 
-def getSoilGrids(
+def getISRIC_soils(
         AOI       = None,
         varname   = None,
         date 	  = None,
@@ -1172,11 +1173,11 @@ def getSoilGrids(
 # sand_sg['sand_60-100cm_mean'].plot()
 # plt.show()
 
-# --------------------
-# ---- getUSGSDEM ----
-# --------------------
+# -----------------
+# ---- get3DEP ----
+# -----------------
 
-def getUSGSDEM(
+def get3DEP(
         AOI       = None,
         res       = None,
         verbose   = False
@@ -1216,7 +1217,7 @@ def getUSGSDEM(
     
     return dap_data
 
-# usgsdem = getUSGSDEM(
+# usgsdem = get3DEP(
 #     AOI=AOI, 
 #     res= "30m",
 #     verbose=True
