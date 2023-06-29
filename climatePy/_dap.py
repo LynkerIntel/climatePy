@@ -24,24 +24,26 @@ import pandas as pd
 # library for parallel processing
 from joblib import Parallel, delayed
 
+# import climatePy modules
+from . import _utils as utils
+from . import _climatepy_filter as climatepy_filter
+
+# warnings lib
+import warnings
+
+# suppress warnings
+warnings.filterwarnings('ignore', category=Warning)
+
+# from src.climatePy import climatepy_filter, utils
+# from climatePy import climatepy_filter, utils
 # import utils from src.climatePy
-
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
-
 # import ._utils as utils
 # import ._climatepy_filter as climatepy_filter
 # import _utils as utils
 # import _climatepy_filter as climatepy_filter
-
-from . import _utils as utils
-from . import _climatepy_filter as climatepy_filter
-
-# from . import climatepy_filter, utils
-
-# from src.climatePy import climatepy_filter, utils
-# from climatePy import climatepy_filter, utils
 
 def dap_crop(
     URL       = None,
@@ -736,7 +738,7 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
         verbose  = verbose
         )
     
-    # merqge across time
+    # merge across time
     out = merge_across_time(data_arrays = out, verbose = verbose)
     
     # concatenated_da = xr.concat(data_arrays, dim=('time', "variable_name"))
@@ -749,15 +751,7 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
     # get data names
     out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['variable'].tolist()]))
     # out_names = list(dict.fromkeys([name.replace("_$", "") for name in dap_data['varname'].tolist()]))
-
     # out_names = list(set([name.replace("_$", "") for name in dap_data["varname"]]))
-    # df['varname'].unique().tolist()
-
-    # df['varname'].map(lambda x: re.sub('_$','',x))
-    # # create a dictionary with the data
-    # data = {'varname': ['prcp', 'tmax', 'prcp', "_$prcp"]}
-    # df = pd.DataFrame(data)
-    # list(dict.fromkeys([name.replace("_$", "") for name in df['varname'].tolist()]))
     # out_names = [name.replace("_$", "") for name in dap_data["varname"]]
     # out_names = dap_data['varname'].str.replace('_$', '').tolist()
 

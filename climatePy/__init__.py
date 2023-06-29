@@ -2,10 +2,16 @@
 import pandas as pd
 import pkg_resources
 
+# warnings lib
+import warnings
+
+# suppress warnings
+warnings.filterwarnings('ignore', category=Warning)
+
 def params():
     data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.csv')
     # data_file = pkg_resources.resource_filename('src', 'data/catalog.csv')
-    data = pd.read_csv(data_file)
+    data = pd.read_csv(data_file, low_memory=False)
     return data
 
 from ._climatepy_filter import climatepy_filter
