@@ -1,6 +1,4 @@
-# **climatePy**
-
-Provide a short description explaining the what, why, and how of your project. Use the following questions as a guide:
+# [**climatePy**](https://github.com/LynkerIntel/climatePy)
 
 <!-- badges: start -->
 
@@ -18,7 +16,7 @@ A Python 📦 for getting point and gridded climate data by AOI. `climatePy` is 
 As its stated in the [climateR README](https://github.com/mikejohnson51/climateR#climater):
 climatePy simplifies the steps needed to get climate data into Python. At its core it provides three main things:
 
-1. A climate catalog of over 100,000k datasets from over 2,000 data providers/archives. See (`load_data()`)
+1. A climate catalog of over 100,000k datasets from over 2,000 data providers/archives. See (`params()`)
 
 2. A general toolkit for accessing remote and local gridded data files bounded by space, time, and variable constraints (`dap()`, `dap_crop()`, `read_dap_file()`)
 
@@ -28,6 +26,7 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 
 ---
 
+- [climatePy PyPI](https://pypi.org/project/climatePy/)
 - A slideshow walking through the capabilities of [**climateR/climatePy**](https://mikejohnson51.github.io/climateR-intro/#1)
 
 ---
@@ -44,11 +43,12 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 
 ## Installation
 
-`climatePy` is still in the development phase and is not yet ready for external users, but eventually it will be installable from PyPI like so:
+`climatePy` can be downloaded from PyPI via `pip` like so:
 
 ``` 
 pip install climatePy
 ```
+**Note:** climatePy is still in **development** so expect to run into issues at this point in its lifecycle...
 
 <br>
 
@@ -59,10 +59,10 @@ pip install climatePy
 ```python
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from src.climatePy import load_data
+from climatePy import params
 
 # load climate catalog
-catalog = load_data()
+catalog = params()
 
 # load example AOI data
 AOI = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
@@ -77,7 +77,7 @@ Here we filter down our climate catalog to TerraClim precipitation data for San 
 
 ```python
 # collect raw meta data
-raw = climatepy_filter.climatepy_filter(
+raw = climatePy.climatepy_filter(
         id        = "terraclim", 
         AOI       = AOI, 
         varname   = "ppt"
@@ -107,6 +107,24 @@ prcp = shortcuts.getTerraClim(
     )
 ```
 ![Precipitation San Luis Obispo County](assets/images/san_luis_obispo_county_ppt.png)
+
+<br>
+<br>
+
+### Get data within a date range
+
+We can also get data within a date range. we'll use `getTerraClim()` to get monthly precipitation data for all of 2018 in San Luis Obispo County, CA.
+
+```python
+# collect raw meta data
+prcp = shortcuts.getTerraClim(
+    AOI       = AOI,
+    varname   = "ppt",
+    startDate = "2018-01-01",
+    endDate   = "2018-12-01"
+    )
+```
+![2018 precipitation in San Luis Obispo County, CA](assets/images/slo_prcp_facet_plots.png)
 
 <br>
 <br>

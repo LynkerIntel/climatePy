@@ -14,9 +14,22 @@ from rtree import index
 import pandas as pd
 import numpy as np
 
-# import utils and load_data from climatePy
-from src.climatePy import load_data
-from src.climatePy import utils
+# import climatePy modules
+from . import _utils as utils
+from . import params
+
+# warnings lib
+import warnings
+
+# suppress warnings
+warnings.filterwarnings('ignore', category=Warning)
+
+# from . import utils, params
+# import ._utils as utils
+# import utils and params from climatePy
+# from climatePy import _utils, params
+# from src.climatePy import params
+# from src.climatePy import utils
 
 def find_intersects(catalog, AOI):
     """Check for catalog rows intersecting with the given AOI.
@@ -109,14 +122,6 @@ def climatepy_filter(
         ensemble (str, optional): The model ensemble member used to generate data. Defaults to None.
         scenario (str, optional): A climate or modeling scenario used. Defaults to None.
 
-    Raises:
-        Exception: Description of the first exception.
-        Exception: Description of the second exception.
-        Exception: Description of the third exception.
-        Exception: Description of the fourth exception.
-        Exception: Description of the fifth exception.
-        ValueError: Description of a value error.
-
     Returns:
         pd.DataFrame: The filtered data frame.
     """
@@ -124,14 +129,11 @@ def climatepy_filter(
     # initialize variables
     variable, description, duration, e, s, URL = [None]*6
 
-    # catalog = load_data()
-
     # if no ID is given, set catalog to all rows of params, otherwise filter down to ID
     if id is None:
-        catalog = load_data()
-        # catalog = params
+        catalog = params()
     else:
-        catalog = load_data()
+        catalog = params()
         catalog = catalog.loc[catalog['id'] == id]
         # catalog = params.loc[params['id'] == id]
 

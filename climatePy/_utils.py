@@ -13,7 +13,7 @@ from pyproj import CRS, Proj
 import numpy as np
 import pandas as pd
 
-# misc libraries
+# warnings lib
 import warnings
 
 # suppress warnings
@@ -28,6 +28,36 @@ def getExtension(x):
     else:
         return x[dot_pos+1:]
     
+def get_var_dims(obj, varname = None):
+
+    """Get the dimensions of a variable in a netcdf file"""
+
+    with xr.open_dataset(obj, decode_times=False) as ds:
+
+        # Get the names of the variables
+        if varname is None:
+            var_names = ds.data_vars.keys()
+        else:
+            var_names = [varname]
+
+        # empty dataframe to concatenate onto
+        empty_df = pd.DataFrame()
+
+        for idx, val in enumerate(var_names):
+
+            # get xyt attributes from netcdf object
+            xyt = ds[val].attrs['dimensions'].split(' ')
+
+            # insert variable name to start of list
+            xyt.insert(0, val)
+
+            # make dataframe
+            empty_df = pd.concat([empty_df, pd.DataFrame([xyt], columns=['variable', 'X', 'Y', 'T'])])
+        
+        ds.close()
+    
+    return empty_df
+
 def make_ext(cat):
     """Create a bounding box from catalog coordinates.
 

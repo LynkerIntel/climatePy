@@ -6,8 +6,8 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="climatePy",                         # pkg name
-    version="0.0.1.0",                        # ersion
-    author="Angus Watters",                     # author
+    version="0.0.4.1",                        # version
+    author="Angus Watters, Mike Johnson",     # authors
     description="A Python package for getting point and gridded climate data by AOI",
     long_description=long_description,      # long description is read from the the readme file
     long_description_content_type="text/markdown",
@@ -17,12 +17,14 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],          
-    python_requires='>=3.6',                # minimum python version requirement 
-    py_modules=["climatePy"],             #  python package name
-    package_dir={'':'climatePy/src'},     #  source code directory of package
-    install_requires=['pandas', 'datetime', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 're', 'numpy',
+    python_requires='>=3.6',               # min python version required 
+    # py_modules=["climatePy"],             #  python package name
+    # package_dir={'':'climatePy/src'},     #  source code directory of package
+    # package_dir={'':'src/climatePy'},     #  source code directory of package
+    # package_dir={'':'/climatePy'},     #  source code directory of package
+    install_requires=['pandas', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 'numpy',
                     'netCDF4', 'joblib'], # dependencies
-    include_package_data=True,
-    package_data={'': ['data/*.csv']}
+    include_package_data=True, 
+    package_data={'': ['data/*.csv']}     # include catalog csv dataset
     # package_data={'src/climatePy': ['src/data/*']}
 )
