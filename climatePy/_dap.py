@@ -30,8 +30,14 @@ from joblib import Parallel, delayed
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
 
-import ._utils as utils
-import ._climatepy_filter as climatepy_filter
+# import ._utils as utils
+# import ._climatepy_filter as climatepy_filter
+# import _utils as utils
+# import _climatepy_filter as climatepy_filter
+
+from . import _utils as utils
+from . import _climatepy_filter as climatepy_filter
+
 # from . import climatepy_filter, utils
 
 # from src.climatePy import climatepy_filter, utils

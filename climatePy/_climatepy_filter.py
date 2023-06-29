@@ -17,7 +17,8 @@ import numpy as np
 # import utils and params from climatePy
 # from climatePy import _utils, params
 
-import ._utils as utils
+# import ._utils as utils
+from . import _utils as utils
 from . import params
 # from . import utils, params
 

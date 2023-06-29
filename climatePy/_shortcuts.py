@@ -14,9 +14,14 @@ from shapely.geometry import Point
 # from climatePy import _utils, dap, climatepy_filter
 # from . import dap, climatepy_filter, utils
 
-import ._utils as utils
-import ._dap as dap
-import ._climatepy_filter as climatepy_filter
+# import ._utils as utils
+# import ._dap as dap
+# import ._climatepy_filter as climatepy_filter
+
+from . import _utils as utils
+from . import _dap as dap
+from . import _climatepy_filter as climatepy_filter
+
 
 # import climatePy
 # AOI    = gpd.read_file('src/data/miami_dade_county.gpkg')
