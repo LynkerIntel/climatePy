@@ -1,15 +1,16 @@
+# pytest library
 import pytest
 
-# from climatePy import utils
-
-# from src.climatePy import utils
-# import climatePy
-
+# import climatePy utils module
 import climatePy._utils as climatePy
 
+# standard python libs
 import re
 from datetime import datetime
 
+# old imports
+# from climatePy import utils
+# from src.climatePy import utils
 
 def test_getExtension():
     # Test cases where the input string contains a file extension

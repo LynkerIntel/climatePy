@@ -1,19 +1,25 @@
+# pytest library
 import pytest
-# from .climatePy import shortcuts
 
+# import climatePy modules
+import climatePy
+
+# data manipulation libs
+import pandas as pd
+import geopandas as gpd
+import xarray as xr
+
+# standard python libs
+import re
+from datetime import datetime
+
+
+# old imports
+# from .climatePy import shortcuts
 # from src.climatePy import shortcuts
 # from src.climatePy import dap
 # from src.climatePy import climatepy_filter
 # from src.climatePy import utils
-
-import climatePy
-import pandas as pd
-import geopandas as gpd
-import xarray as xr
-# import matplotlib.pyplot as plt
-
-import re
-from datetime import datetime
 
 # AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
 # AOI    = gpd.read_file('climatePy/data/san_luis_obispo_county.gpkg')
