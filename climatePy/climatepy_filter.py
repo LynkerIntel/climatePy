@@ -15,7 +15,10 @@ import pandas as pd
 import numpy as np
 
 # import utils and params from climatePy
-from climatePy import utils, params
+# from climatePy import utils, params
+
+from . import _utils as utils
+from . import params
 # from src.climatePy import params
 # from src.climatePy import utils
 
