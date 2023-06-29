@@ -3,7 +3,9 @@ import pytest
 # from climatePy import utils
 
 # from src.climatePy import utils
-import climatePy
+# import climatePy
+
+import climatePy._utils as climatePy
 
 import re
 from datetime import datetime

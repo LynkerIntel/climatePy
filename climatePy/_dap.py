@@ -26,8 +26,6 @@ from joblib import Parallel, delayed
 
 # import utils from src.climatePy
 
-<<<<<<< HEAD:climatePy/dap.py
-=======
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
@@ -42,12 +40,8 @@ from . import _climatepy_filter as climatepy_filter
 
 # from . import climatepy_filter, utils
 
->>>>>>> package_dev:climatePy/_dap.py
 # from src.climatePy import climatepy_filter, utils
 # from climatePy import climatepy_filter, utils
-
-from . import _utils as utils
-from . import _climatepy_filter as climatepy_filter
 
 def dap_crop(
     URL       = None,

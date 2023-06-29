@@ -15,12 +15,6 @@ import pandas as pd
 import numpy as np
 
 # import utils and params from climatePy
-<<<<<<< HEAD:climatePy/climatepy_filter.py
-# from climatePy import utils, params
-
-from . import _utils as utils
-from . import params
-=======
 # from climatePy import _utils, params
 
 # import ._utils as utils
@@ -28,7 +22,6 @@ from . import _utils as utils
 from . import params
 # from . import utils, params
 
->>>>>>> package_dev:climatePy/_climatepy_filter.py
 # from src.climatePy import params
 # from src.climatePy import utils
 
