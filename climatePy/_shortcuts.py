@@ -1,22 +1,34 @@
 import pandas as pd
 import geopandas as gpd
 import xarray as xr
-import matplotlib.pyplot as plt
 import shapely
 
 # from src.climatePy import dap, climatepy_filter, utils
 
 import xarray as xr
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from shapely.geometry import Point
 
 # from src.climatePy import dap, climatepy_filter, utils
-from climatePy import dap, climatepy_filter, utils
+# from climatePy import _utils, dap, climatepy_filter
+# from . import dap, climatepy_filter, utils
 
+# import ._utils as utils
+# import ._dap as dap
+# import ._climatepy_filter as climatepy_filter
+
+from . import _utils as utils
+from . import _dap as dap
+from . import _climatepy_filter as climatepy_filter
+
+
+# import climatePy
 # AOI    = gpd.read_file('src/data/miami_dade_county.gpkg')
 # AOI    = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
 # AOI    = gpd.read_file('src/data/boulder_county.gpkg')
+# climatePy.climatepy_dap()
+# dap.cl
 
 # ----------------------
 # ---- getTerraClim ----
@@ -46,6 +58,7 @@ def getTerraClim(
     """
     # get matching arguments for climatepy_filter function
     dap_meta = dap.climatepy_dap(
+    # dap_meta = climatepy_dap(
         AOI       = AOI, 
         id        = "terraclim", 
         varname   = varname, 
@@ -56,6 +69,7 @@ def getTerraClim(
 
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
+    # dap_data = dap(
         **dap_meta
         )
     
