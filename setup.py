@@ -27,4 +27,4 @@ setuptools.setup(
     include_package_data=True, 
     package_data={'': ['data/*.csv']}     # include catalog csv dataset
     # package_data={'src/climatePy': ['src/data/*']}
-)
+    )
