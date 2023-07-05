@@ -127,6 +127,27 @@ prcp = shortcuts.getTerraClim(
 ![2018 precipitation in San Luis Obispo County, CA](assets/images/slo_prcp_facet_plots.png)
 
 <br>
+
+### Data from known bounding coordinates
+
+`climatePy` offers support for `shapely` bounding boxes. Here we are requesting wind velocity data for the four corners region of the USA by bounding coordinates.
+
+```python
+from shapely.geometry import box
+
+bbox = box(-112, 34, -105, 39)
+
+bbox = gpd.GeoDataFrame(geometry=[bbox], crs ='EPSG:4326')
+
+vs = climatePy.getGridMET(
+       AOI       = bbox, 
+       varname   = "vs",
+       startDate = "2018-09-01"
+       )
+```
+![Daily Wind Velocity Four Corners, USA](assets/images/four_corners_gridmet.png)
+
+<br>
 <br>
 
 ## Credits
