@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings('ignore', category=Warning)
 
 def getExtension(x):
-    """Get the file extension from a string."""
+    """Extract the file extension from a string"""
 
     dot_pos = x.rfind('.')
     if dot_pos == -1:
