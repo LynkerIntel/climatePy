@@ -115,7 +115,6 @@ prcp = shortcuts.getTerraClim(
 
 We can also get data within a date range. we'll use `getTerraClim()` to get monthly precipitation data for all of 2018 in San Luis Obispo County, CA.
 
-
 ```python
 # collect raw meta data
 prcp = shortcuts.getTerraClim(
