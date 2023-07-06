@@ -27,40 +27,6 @@ import warnings
 # suppress warnings
 warnings.filterwarnings('ignore', category=Warning)
 
-######## TEST #########
-# spoly_wgs84 = gpd.read_file(paths[7])
-# spoly_nad83 = gpd.read_file(paths[6])
-# # mpoly_wgs84 = gpd.read_file(paths[3])
-# # mpoly_nad83 = gpd.read_file(paths[2])
-# # spts = gpd.read_file(paths[5])
-# mppts = gpd.read_file(paths[1])
-# mppts.geometry.tolist()
-# mppts.geometry[0].coords.xy
-# # AOI = spoly_wgs84
-# AOI = spoly_nad83
-# AOI = mppts
-# AOI = AOI.geometry[0]
-# shapely_to_gpd(spoly_wgs84.geometry[0])
-# shapely_to_gpd(mppts.geometry[0])
-# shapely_to_gpd(spts.geometry[0])
-# # type(AOI.geometry
-# AOI = [(-105.548, 38.997),(-106.113, 34.407), (-111.67, 39.306)]
-# # AOI = [(-105.548, 38.997)]
-# AOI = shapely.geometry.MultiPoint(AOI)
-# np.asarray(yy).mean()
-# AOI.exterior.coords.xy
-# # AOI = AOI.geometry
-# # AOI = spts
-# # AOI = mppts
-# # AOI = spoly_nad83
-# # id         = "gridmet"
-# id = None
-# asset      = None
-# startDate  = "2023-01-01"
-# endDate    = "2023-07-01"
-# varname    = ["prcp", "pr", "tmax"]
-
-################################
 ################################
 
 # Find the maximum bounding box of the AOI
@@ -176,11 +142,11 @@ def find_intersects(catalog, AOI):
         AOI_t = AOI.to_crs(crs)
 
         # get maximum bounding box of AOI
-        max_bounds = get_max_bbox(AOI_t)
+        # max_bounds = get_max_bbox(AOI_t)
 
         # iterate through intersection of transformed AOI and bounding box indexes
-        # for i in idx.intersection(AOI_t.bounds.iloc[0]):
-        for i in idx.intersection(max_bounds):
+        for i in idx.intersection(AOI_t.bounds.iloc[0]):
+        # for i in idx.intersection(max_bounds):
             # # catalog row
             # bbox    = catalog.loc[i]
             
@@ -341,7 +307,7 @@ def climatepy_filter(
         AOI = shapely_to_gpd(AOI)
 
     # 5. AOI filter
-    if AOI:
+    if AOI is None:
         catalog = find_intersects(
             catalog = catalog,
             AOI     = AOI

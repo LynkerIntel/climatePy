@@ -11,22 +11,21 @@ from . import _utils as utils
 from . import _dap as dap
 from . import _climatepy_filter as climatepy_filter
 
+# import climatePy._utils as utils
+# from climatePy import params
+# from climatePy import _dap as dap
+# from climatePy import _climatepy_filter as climatepy_filter
+
 # warnings lib
 import warnings
 
 # suppress warnings
 warnings.filterwarnings('ignore', category=Warning)
 
-# from src.climatePy import dap, climatepy_filter, utils
-# from climatePy import _utils, dap, climatepy_filter
-# from . import dap, climatepy_filter, utils
-# import ._utils as utils
-# import ._dap as dap
-# import ._climatepy_filter as climatepy_filter
 
 # test data
 # AOI    = gpd.read_file('climatePy/data/san_luis_obispo_county.gpkg')
-# AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
+AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
 
 # ----------------------
 # ---- getTerraClim ----
@@ -73,6 +72,11 @@ def getTerraClim(
         )
     
     return dap_data
+
+# terr = getTerraClim(AOI = AOI, 
+#              varname = "tmax",
+#              startDate = "2010-01-01",
+#              endDate = "2010-12-31")
 
 # -----------------------------
 # ---- getTerraClimNormals ----
