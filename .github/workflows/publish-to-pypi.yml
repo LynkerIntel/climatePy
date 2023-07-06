@@ -1,8 +1,9 @@
 name: Publish climatePy Python distributions 📦 to PyPI and TestPyPI
 
 on: 
-    push:
-        - main
+  push:
+    branches:
+      - main
 jobs:
     build-n-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI and TestPyPI
