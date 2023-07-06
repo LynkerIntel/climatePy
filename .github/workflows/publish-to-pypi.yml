@@ -2,10 +2,8 @@ name: Publish climatePy Python distributions 📦 to PyPI and TestPyPI
 
 on: 
   push:
-    branches:
-      - main
-    tags:
-      - 'v[0-9]+(\.[0-9]+)*([-\.]\S+)?'
+    tags: ['v[0-9]+(\.[0-9]+)*([-\.]\S+)?']
+    branches: [main]
 jobs:
     build-n-publish:
       name: Build and publish Python 🐍 distributions 📦 to PyPI and TestPyPI
