@@ -4,7 +4,6 @@ import geopandas as gpd
 import xarray as xr
 import shapely
 from shapely.geometry import Point
-# import matplotlib.pyplot as plt
 
 # import climatePy modules
 from . import _utils as utils
@@ -25,7 +24,7 @@ warnings.filterwarnings('ignore', category=Warning)
 
 # test data
 # AOI    = gpd.read_file('climatePy/data/san_luis_obispo_county.gpkg')
-AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
+# AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
 
 # ----------------------
 # ---- getTerraClim ----
