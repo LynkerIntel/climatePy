@@ -379,7 +379,7 @@ def dap(
                 startDate = startDate,
                 endDate   = endDate,
                 varname   = varname,
-                verbose   = False
+                verbose   = verbose
                 )
             
             # if dopar:
@@ -393,7 +393,7 @@ def dap(
             dap_data = dap_get(
                 dap_data = dap_data,
                 dopar    = dopar,
-                verbose  = False
+                verbose  = verbose
                 )
             
             return dap_data
@@ -1313,7 +1313,7 @@ def vrt_crop_get(
 
     if verbose:
         print("Opening VRT from URL: ", URL)
- 
+
     # Area of interest
     vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
 
@@ -1359,67 +1359,67 @@ def vrt_crop_get(
     return vrts
 
 def parse_date(duration, interval):
-        """Parse the date range based on the duration and interval.
+    """Parse the date range based on the duration and interval.
 
-        Args:
-            duration (str): The duration string in the format "start_date/end_date".
-            interval (str): The interval string specifying the time unit.
-        
-        Returns:
-            pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
-        """
-        
-        # split duration string
-        d = duration.split("/")
-        
-        # if end date is "..", set it to today's date
-        if d[1] == "..":
-                d[1] = datetime.now().strftime("%Y-%m-%d")
+    Args:
+        duration (str): The duration string in the format "start_date/end_date".
+        interval (str): The interval string specifying the time unit.
+    
+    Returns:
+        pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
+    """
+    
+    # split duration string
+    d = duration.split("/")
+    
+    # if end date is "..", set it to today's date
+    if d[1] == "..":
+            d[1] = datetime.now().strftime("%Y-%m-%d")
 
-        # if interval in ["1 month", "1 months"]:
-        if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
-        # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
+    # if interval in ["1 month", "1 months"]:
+    if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
+    # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
+            d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
 
-        # if interval in ["hour", "hours"]:
-        if any(keyword in interval for keyword in ["hour", "hours"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
-                d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
+    # if interval in ["hour", "hours"]:
+    if any(keyword in interval for keyword in ["hour", "hours"]):
+            d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
+            d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
 
-        # if interval is 31 days, change to 1 month
-        if interval in ["31 days","31.5 days"]:
-            interval = "1 month"
+    # if interval is 31 days, change to 1 month
+    if interval in ["31 days","31.5 days"]:
+        interval = "1 month"
 
-        # if interval is 365, 365.5 days, change to 1 year
-        if interval in ["365 days","365.5 days"]:
-            interval = "1 year"
+    # if interval is 365, 365.5 days, change to 1 year
+    if interval in ["365 days","365.5 days"]:
+        interval = "1 year"
 
-        interval_map = {
-            "hour": "H",
-            "hours": "H",
-            "minute": "min",
-            "minutes": "min",
-            "second": "S",
-            "seconds": "S",
-            "month": "MS",  # Month Start
-            "months": "MS"  # Month Start
-            }
-        
-        # split interval string
-        interval_type = interval.split(" ")[-1]
+    interval_map = {
+        "hour": "H",
+        "hours": "H",
+        "minute": "min",
+        "minutes": "min",
+        "second": "S",
+        "seconds": "S",
+        "month": "MS",  # Month Start
+        "months": "MS"  # Month Start
+        }
+    
+    # split interval string
+    interval_type = interval.split(" ")[-1]
 
-        # get frequency from interval_map
-        freq = interval_map.get(interval_type, interval_type[0])
-        
-        # # convert start_date and end_date to pandas Timestamp objects
-        # start_date = pd.Timestamp(d[0])
-        # end_date = pd.Timestamp(d[1])
-        # # calculate the number of days between start and end dates
-        # delta = (end_date - start_date) / (nT - 1)
-        # # generate the date range
-        # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
+    # get frequency from interval_map
+    freq = interval_map.get(interval_type, interval_type[0])
+    
+    # # convert start_date and end_date to pandas Timestamp objects
+    # start_date = pd.Timestamp(d[0])
+    # end_date = pd.Timestamp(d[1])
+    # # calculate the number of days between start and end dates
+    # delta = (end_date - start_date) / (nT - 1)
+    # # generate the date range
+    # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
 
-        return pd.date_range(start=d[0], end=d[1], freq=freq)
+    return pd.date_range(start=d[0], end=d[1], freq=freq)
 
 # def parse_date2(duration, nT):
     # duration = catalog["duration"].iloc[i]
