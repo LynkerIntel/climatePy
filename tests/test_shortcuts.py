@@ -22,6 +22,8 @@ from datetime import datetime
 # from src.climatePy import utils
 
 # AOI    = gpd.read_file('climatePy/data/boulder_county.gpkg')
+
+# climatePy.getGridMET(AOI, "pr", "2000-01-01", "2000-01-01", verbose=True)
 # AOI    = gpd.read_file('climatePy/data/san_luis_obispo_county.gpkg')
 
 # @pytest.fixture(params=['miami_dade_county', 'san_luis_obispo_county', 

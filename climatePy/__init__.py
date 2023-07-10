@@ -21,9 +21,6 @@ from ._shortcuts import getTerraClim, getTerraClimNormals, getGridMET, getMACA, 
     getBCCA, getLivneh, getLivneh_fluxes, getISRIC_soils, getDaymet, \
     getVIC, getNASADEM, getWorldClim, getCHIRPS, getLCMAP, getNLDAS
 
-# can i do this and get the __all__ to grab all the functions from ._shortcuts.py ?
-# from ._shortcuts import *
-
 __all__ = [
     'climatepy_filter',
     'dap',
@@ -52,7 +49,7 @@ __all__ = [
 ]
 
 ##############################
-# Old method
+# # Old method
 # import pandas as pd
 # import pkg_resources
 
