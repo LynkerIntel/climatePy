@@ -28,6 +28,9 @@ from joblib import Parallel, delayed
 from . import _utils as utils
 from . import _climatepy_filter as climatepy_filter
 
+# from climatePy import _utils as utils
+# from climatePy import _climatepy_filter as climatepy_filter
+
 # warnings lib
 import warnings
 
@@ -40,10 +43,6 @@ warnings.filterwarnings('ignore', category=Warning)
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
-# import ._utils as utils
-# import ._climatepy_filter as climatepy_filter
-# import _utils as utils
-# import _climatepy_filter as climatepy_filter
 
 def dap_crop(
     URL       = None,
@@ -289,6 +288,7 @@ def dap(
         ):
         
         """Get data from a DAP server"""
+    
 
         if not isinstance(toptobottom, bool):
 
