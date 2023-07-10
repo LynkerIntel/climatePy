@@ -307,7 +307,7 @@ def climatepy_filter(
         AOI = shapely_to_gpd(AOI)
 
     # 5. AOI filter
-    if AOI is None:
+    if AOI is not None:
         catalog = find_intersects(
             catalog = catalog,
             AOI     = AOI
