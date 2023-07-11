@@ -1,4 +1,4 @@
-# [**climatePy**](https://github.com/LynkerIntel/climatePy)
+# [**climatePy**](https://github.com/anguswg-ucsb/climatePy)
 
 <!-- badges: start -->
 
@@ -24,14 +24,15 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 
 <br>
 
----
+## Links
 
+- [climatePy (Lynker intel)](https://github.com/LynkerIntel/climatePy)
 - [climatePy PyPI](https://pypi.org/project/climatePy/)
-- A slideshow walking through the capabilities of [**climateR/climatePy**](https://mikejohnson51.github.io/climateR-intro/#1)
+- [**climateR/climatePy slideshow**](https://mikejohnson51.github.io/climateR-intro/#1)
 
----
+<br>
 
-## Table of Contents (Optional)
+## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
