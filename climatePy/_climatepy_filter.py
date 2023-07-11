@@ -296,15 +296,15 @@ def climatepy_filter(
                 catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
 
     # # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
-    # if isinstance(AOI, (shapely.geometry.point.Point, 
-    #         shapely.geometry.multipoint.MultiPoint,
-    #         shapely.geometry.linestring.LineString, 
-    #         shapely.geometry.multilinestring.MultiLineString, 
-    #         shapely.geometry.polygon.Polygon, 
-    #         shapely.geometry.multipolygon.MultiPolygon)):
+    if isinstance(AOI, (shapely.geometry.point.Point, 
+            shapely.geometry.multipoint.MultiPoint,
+            shapely.geometry.linestring.LineString, 
+            shapely.geometry.multilinestring.MultiLineString, 
+            shapely.geometry.polygon.Polygon, 
+            shapely.geometry.multipolygon.MultiPolygon)):
         
-    #     # convert shapely geometry to geopandas dataframe
-    #     AOI = shapely_to_gpd(AOI)
+        # convert shapely geometry to geopandas dataframe
+        AOI = shapely_to_gpd(AOI)
 
     # 5. AOI filter
     if AOI is not None:

@@ -379,7 +379,7 @@ def dap(
                 startDate = startDate,
                 endDate   = endDate,
                 varname   = varname,
-                verbose   = verbose
+                verbose   = False
                 )
             
             # if dopar:
@@ -393,7 +393,7 @@ def dap(
             dap_data = dap_get(
                 dap_data = dap_data,
                 dopar    = dopar,
-                verbose  = verbose
+                verbose  = False
                 )
             
             return dap_data
@@ -536,7 +536,8 @@ def var_to_da(var, dap_row):
         var = np.expand_dims(var, axis=-1)
     
     # check if size of first dimension of 'var' is equals number of rows in 'dap'
-    if var.shape[2] != dap_row["nrows"]:
+    if var.shape[2] != dap_row["nrows"] or dap_row["nrows"] == dap_row["ncols"]:
+    # if var.shape[2] != dap_row["nrows"]:
         # transpose the first two dimensions of 'var' if not in correct order
         var = var.transpose(dap_row["Y_name"], dap_row["X_name"], dap_row["T_name"])
         # var2 = var.transpose(dap_row["T_name"], dap_row["X_name"],  dap_row["Y_name"])

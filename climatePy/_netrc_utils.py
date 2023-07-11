@@ -82,26 +82,42 @@ def checkDodsrc(
     return any(netrcFile in line for line in lines)
 
 def writeDodsrc(
-        netrcFile  = getNetrcPath(),
-        dodsrcFile = getDodsrcPath(), 
-        overwrite  = False
+        netrcFile  = None,
+        dodsrcFile = ".dodsrc"
         ):
     
-    if (checkDodsrc(dodsrcFile, netrcFile) and not overwrite):
-        raise ValueError(f"{dodsrcFile} already exists. Set `overwrite=True` if you'd like to overwrite.")
+    if not netrcFile:
+        netrcFile = getNetrcPath()
+
+    # if not dodsrcFile:
+    #     dodsrcFile = getDodsrcPath()
+
+    # if (checkDodsrc(dodsrcFile, netrcFile) and not overwrite):
+    #     raise ValueError(f"{dodsrcFile} already exists. Set `overwrite=True` if you'd like to overwrite.")
     
     dir = os.path.dirname(dodsrcFile)
-    
+
+    # string = f'USE_CACHE=0\n\
+    #     MAX_CACHE_SIZE=20\n\
+    #     MAX_CACHED_OBJ=5\n\
+    #     IGNORE_EXPIRES=0\n\
+    #     CACHE_ROOT={dir}/.dods_cache/\n\
+    #     DEFAULT_EXPIRES=86400\n\
+    #     ALWAYS_VALIDATE=0\n\
+    #     DEFLATE=0\n\
+    #     VALIDATE_SSL=1\n\
+    #     HTTP.COOKIEJAR={dir}/.cookies\n\
+    #     HTTP.NETRC={netrcFile}'
+
     string = f'USE_CACHE=0\n\
         MAX_CACHE_SIZE=20\n\
         MAX_CACHED_OBJ=5\n\
         IGNORE_EXPIRES=0\n\
-        CACHE_ROOT={dir}/.dods_cache/\n\
         DEFAULT_EXPIRES=86400\n\
         ALWAYS_VALIDATE=0\n\
         DEFLATE=0\n\
         VALIDATE_SSL=1\n\
-        HTTP.COOKIEJAR={dir}/.cookies\n\
+        HTTP.COOKIEJAR={dir}/.urs_cookies\n\
         HTTP.NETRC={netrcFile}'
     
     # create a dodsrc file
@@ -110,6 +126,9 @@ def writeDodsrc(
         
     # set the owner-only permission
     os.chmod(dodsrcFile, 0o600)
+
+
+    return dodsrcFile
 
 def check_rc_files(
         dodsrcFile = getDodsrcPath(), 

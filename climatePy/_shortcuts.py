@@ -5,10 +5,14 @@ import xarray as xr
 import shapely
 from shapely.geometry import Point
 
+#  os lib
+import os
+
 # import climatePy modules
 from . import _utils as utils
 from . import _dap as dap
 from . import _climatepy_filter as climatepy_filter
+from . import _netrc_utils as netrc_utils
 
 # import climatePy._utils as utils
 # from climatePy import params
@@ -199,49 +203,118 @@ def getGridMET(
 # ---- getGLDAS  ----
 # --------------------
 
-# TODO: ADD GLDAS and need check_rc_files() function 
-# def getGLDAS(
-#         AOI       = None,
-#         varname   = None,
-#         startDate = None, 
-#         endDate   = None, 
-#         model     = None,
-#         verbose   = False
-#         ):
+# TODO: Fix netrc and dodsrc file creation process to work with earthdata credentials
+def getGLDAS(
+        AOI       = None,
+        varname   = None,
+        startDate = None, 
+        endDate   = None, 
+        model     = None,
+        verbose   = False
+        ):
     
-#     """Get GLDAS Data for an Area of Interest
+    """Get GLDAS Data for an Area of Interest
 
-#     Args:
-#         AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
-#         varname (list): Variable name(s) to download.
-#         startDate (str): Start date in the form "YYYY-MM-DD"
-#         endDate (str): End date in the form "YYYY-MM-DD"
-#         model (str): Model to download.
-#         verbose (bool): Print verbose output
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (list): Variable name(s) to download.
+        startDate (str): Start date in the form "YYYY-MM-DD"
+        endDate (str): End date in the form "YYYY-MM-DD"
+        model (str): Model to download.
+        verbose (bool): Print verbose output
 
-#     Returns:
-#         dictionary of xarray.DataArray(s): xarray DataArray containing climate data
-#     """
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+    """
 
-#     # get matching arguments for climatepy_filter function
-#     dap_meta = dap.climatepy_dap(
-#         AOI       = AOI, 
-#         id        = "GLDAS", 
-#         varname   = varname, 
-#         startDate = startDate, 
-#         endDate   = endDate,
-#         verbose   = verbose
-#         )
+    if not netrc_utils.checkNetrc():
+
+        raise Exception("netrc file not found. Please run writeNetrc() with earth data credentials..")
     
-#     # dap_meta['dopar'] = dopar
+    else:
 
-#     # need to provide dap_meta dictionary object directly as input
-#     dap_data = dap.dap(
-#         **dap_meta
-#         )
+        x = netrc_utils.writeDodsrc()
+
+        # get matching arguments for climatepy_filter function
+        dap_meta = dap.climatepy_dap(
+            AOI       = AOI, 
+            id        = "GLDAS", 
+            varname   = varname, 
+            startDate = startDate, 
+            endDate   = endDate,
+            verbose   = verbose
+            )
+        
+        # dap_meta['dopar'] = dopar
+
+        # need to provide dap_meta dictionary object directly as input
+        dap_data = dap.dap(
+            **dap_meta
+            )
+        
+        # remove dodsrc file
+        os.unlink(x)
+
+        return dap_data
     
-#     return dap_data
+# --------------------
+# ---- getMODIS  ----
+# --------------------
 
+
+def getMODIS(
+        AOI       = None,
+        varname   = None,
+        startDate = None, 
+        endDate   = None, 
+        model     = None,
+        verbose   = False
+        ):
+    
+    """Get MODIS Data for an Area of Interest
+
+    Args:
+        AOI (geopandas dataframe, shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (list): Variable name(s) to download.
+        startDate (str): Start date in the form "YYYY-MM-DD"
+        endDate (str): End date in the form "YYYY-MM-DD"
+        model (str): Model to download.
+        verbose (bool): Print verbose output
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+    """
+    
+    if not netrc_utils.checkNetrc():
+
+        raise Exception("netrc file not found. Please run writeNetrc() with earth data credentials..")
+    
+    else:
+
+        x = netrc_utils.writeDodsrc()
+
+        # get matching arguments for climatepy_filter function
+        dap_meta = dap.climatepy_dap(
+            AOI       = AOI, 
+            id        = "MODIS", 
+            varname   = varname, 
+            startDate = startDate, 
+            endDate   = endDate,
+            verbose   = verbose
+            )
+        
+        # dap_meta['dopar'] = dopar
+
+        # need to provide dap_meta dictionary object directly as input
+        dap_data = dap.dap(
+            **dap_meta
+            )
+        
+        # remove dodsrc file
+        os.unlink(x)
+
+        return dap_data
+    
 # -------------------
 # ---- getDaymet ----
 # -------------------
@@ -577,24 +650,34 @@ def getNLDAS(
     Returns:
         dictionary of xarray.DataArray(s): xarray DataArray containing climate data
     """
+    if not netrc_utils.checkNetrc():
 
-    # get matching arguments for climatepy_filter function
-    dap_meta = dap.climatepy_dap(
-        AOI       = AOI,
-        id        = "NLDAS", 
-        varname   = varname, 
-        startDate = startDate, 
-        endDate   = endDate,
-        model     = model,
-        verbose   = verbose
-        )
+        raise Exception("netrc file not found. Please run writeNetrc() with earth data credentials..")
     
-    # need to provide dap_meta dictionary object directly as input
-    dap_data = dap.dap(
-        **dap_meta
-        )
+    else:
+
+        x = netrc_utils.writeDodsrc()
+
+        # get matching arguments for climatepy_filter function
+        dap_meta = dap.climatepy_dap(
+            AOI       = AOI,
+            id        = "NLDAS", 
+            varname   = varname, 
+            startDate = startDate, 
+            endDate   = endDate,
+            model     = model,
+            verbose   = verbose
+            )
+        
+        # need to provide dap_meta dictionary object directly as input
+        dap_data = dap.dap(
+            **dap_meta
+            )
+        
+        # unlink Dodsrc file
+        os.unlink(x)
     
-    return dap_data
+        return dap_data
 
 # -----------------
 # ---- getMACA ---- 

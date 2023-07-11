@@ -19,9 +19,11 @@ from ._dap import dap, dap_crop, dap_get
 from ._shortcuts import getTerraClim, getTerraClimNormals, getGridMET, getMACA, \
     get3DEP, getLOCA, getPRISM, getPolaris, \
     getBCCA, getLivneh, getLivneh_fluxes, getISRIC_soils, getDaymet, \
-    getVIC, getNASADEM, getWorldClim, getCHIRPS, getLCMAP, getNLDAS
+    getVIC, getNASADEM, getWorldClim, getCHIRPS, getLCMAP, getNLDAS, getGLDAS, getMODIS
+from ._netrc_utils import writeDodsrc, writeNetrc, getNetrcPath, getDodsrcPath, checkNetrc, checkDodsrc
 
 __all__ = [
+    'params',
     'climatepy_filter',
     'dap',
     'dap_crop',
@@ -45,7 +47,14 @@ __all__ = [
     'getCHIRPS', 
     'getLCMAP',
     'getNLDAS',
-    'params'
+    'getGLDAS',
+    'getMODIS',
+    'writeDodsrc',
+    'writeNetrc',
+    'getNetrcPath',
+    'getDodsrcPath',
+    'checkNetrc',
+    'checkDodsrc'
 ]
 
 ##############################
