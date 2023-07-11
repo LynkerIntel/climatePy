@@ -49,7 +49,7 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 ``` 
 pip install climatePy
 ```
-**Note:** climatePy is still in **development** so expect to run into issues at this point in its lifecycle...
+**Note:** climatePy is still in **development**
 
 <br>
 
@@ -58,12 +58,12 @@ pip install climatePy
 ### Loading climate catalog
 
 ```python
+import climatePy
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from climatePy import params
 
 # load climate catalog
-catalog = params()
+catalog = climatePy.params()
 
 # load example AOI data
 AOI = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
@@ -100,7 +100,7 @@ Now lets use the `getTerraClim()` function from `climatePy` to get precipitation
 
 ```python
 # collect raw meta data
-prcp = shortcuts.getTerraClim(
+prcp = climatePy.getTerraClim(
     AOI       = AOI,
     varname   = "ppt",
     startDate = "2018-01-01",
@@ -118,7 +118,7 @@ We can also get data within a date range. we'll use `getTerraClim()` to get mont
 
 ```python
 # collect raw meta data
-prcp = shortcuts.getTerraClim(
+prcp = climatePy.getTerraClim(
     AOI       = AOI,
     varname   = "ppt",
     startDate = "2018-01-01",
