@@ -39,6 +39,7 @@ def getTerraClim(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -52,6 +53,7 @@ def getTerraClim(
         varname (str, list): Variable name(s) to be extracted
         startDate (str): Start date for data extraction in YYYY-MM-DD format
         endDate (str): End date for data extraction in YYYY-MM-DD format
+        dopar (bool): Use parallel processing
         verbose (bool): Print out additional information
 
     Returns:
@@ -67,7 +69,9 @@ def getTerraClim(
         endDate   = endDate,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
     # dap_data = dap(
@@ -90,6 +94,7 @@ def getTerraClimNormals(
         varname   = None,
         month     = [i for i in range(1, 13)],
         scenario  = '19812010', 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -103,6 +108,7 @@ def getTerraClimNormals(
         varname (str, list): Variable name(s) to be extracted
         month (int, list): Month(s) to extract data for
         scenario (str): Scenario to extract data for
+        dopar (bool): Use parallel processing
         verbose (bool): Print out additional information
     
     Returns:
@@ -146,6 +152,7 @@ def getTerraClimNormals(
         startDate = min(dates).strftime("%Y-%m-%d"),
         endDate   = max(dates).strftime("%Y-%m-%d"), 
         varname   = varname,
+        dopar     = dopar,
         verbose   = verbose
         )
 
@@ -160,6 +167,7 @@ def getGridMET(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -174,6 +182,7 @@ def getGridMET(
             ['pr', 'rmin', 'rmax', 'srad', 'sph', 'swe', 'tmmn', 'tmmx', 'vs', 'vpd', 'ws']
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -190,7 +199,7 @@ def getGridMET(
         verbose   = verbose
         )
     
-    # dap_meta['dopar'] = dopar
+    dap_meta['dopar'] = dopar
 
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
@@ -210,6 +219,7 @@ def getGLDAS(
         startDate = None, 
         endDate   = None, 
         model     = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -221,6 +231,7 @@ def getGLDAS(
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
         model (str): Model to download.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -245,7 +256,7 @@ def getGLDAS(
             verbose   = verbose
             )
         
-        # dap_meta['dopar'] = dopar
+        dap_meta['dopar'] = dopar
 
         # need to provide dap_meta dictionary object directly as input
         dap_data = dap.dap(
@@ -268,6 +279,7 @@ def getMODIS(
         startDate = None, 
         endDate   = None, 
         model     = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -279,6 +291,7 @@ def getMODIS(
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
         model (str): Model to download.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -303,7 +316,7 @@ def getMODIS(
             verbose   = verbose
             )
         
-        # dap_meta['dopar'] = dopar
+        dap_meta['dopar'] = dopar
 
         # need to provide dap_meta dictionary object directly as input
         dap_data = dap.dap(
@@ -324,6 +337,7 @@ def getDaymet(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -342,6 +356,7 @@ def getDaymet(
         varname (list): Variable name(s) to download. Options include:	
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -358,7 +373,9 @@ def getDaymet(
         endDate   = endDate,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -378,6 +395,7 @@ def getBCCA(
         model     = 'CCSM4',
         scenario  = 'rcp45', 
         ensemble  = None,  
+        dopar     = True,
         verbose   = False
         ):
     
@@ -393,6 +411,7 @@ def getBCCA(
         model (str): Model name. Default is 'CCSM4'.
         scenario (str): Scenario name. Default is 'rcp45'.
         ensemble (str): Ensemble name. Default is None.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -411,7 +430,9 @@ def getBCCA(
         endDate   = endDate,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -428,6 +449,7 @@ def getPRISM(
         startDate = None, 
         endDate   = None, 
         timeRes   = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -440,6 +462,7 @@ def getPRISM(
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
         timeRes (str): time resolution of data to be downloaded. Options are "daily" or "monthly". Default is "monthly"
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -467,6 +490,8 @@ def getPRISM(
             endDate   = endDate,
             verbose   = verbose
             )
+        
+        dap_meta['dopar'] = dopar
 
         # need to provide dap_meta dictionary object directly as input
         dap_data = dap.dap(
@@ -498,6 +523,7 @@ def getLivneh(
         startDate = None, 
         endDate   = None, 
         timeRes   = "daily",
+        dopar     = True,
         verbose   = False
         ):
     
@@ -511,6 +537,7 @@ def getLivneh(
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
         timeRes (str): Time resolution. Options include: "daily" or "monthly". Default is "daily".
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -537,7 +564,9 @@ def getLivneh(
             endDate   = endDate,
             verbose   = verbose
             )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -554,6 +583,7 @@ def getLivneh_fluxes(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -566,6 +596,7 @@ def getLivneh_fluxes(
         varname (str, list): Variable name(s) to download.
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output
 
     Returns:
@@ -582,6 +613,8 @@ def getLivneh_fluxes(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -600,10 +633,25 @@ def getVIC(
         endDate   = None, 
         model     = 'ccsm4', 
         scenario  = 'rcp45',
+        dopar     = True,
         verbose   = False
         ):
     
-    """Get VIC Climate Data for an Area of Interest"""
+    """Get VIC Climate Data for an Area of Interest
+
+    Args:
+        AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        varname (str, list): Variable name(s) to download.
+        startDate (str): Start date in the form "YYYY-MM-DD"
+        endDate (str): End date in the form "YYYY-MM-DD"
+        model (str): Climate model. Options include: 'ccsm4', 'cnrm_cm5', 'gfdl_cm3', 'hadgem2_es', 'ipsl_cm5a_lr', 'miroc_esm', 'mri_cgcm3', 'noresm1_m'
+        scenario (str): Climate scenario. Options include: 'rcp45', 'rcp85'
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
+        verbose (bool): Print verbose output
+
+    Returns:
+        dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+    """
 
     # get matching arguments for climatepy_filter function
     dap_meta = dap.climatepy_dap(
@@ -617,6 +665,8 @@ def getVIC(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -634,6 +684,7 @@ def getNLDAS(
         startDate = None, 
         endDate   = None, 
         model     = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -645,6 +696,7 @@ def getNLDAS(
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
         model (str): Model name. Default is None.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -669,6 +721,8 @@ def getNLDAS(
             verbose   = verbose
             )
         
+        dap_meta['dopar'] = dopar
+        
         # need to provide dap_meta dictionary object directly as input
         dap_data = dap.dap(
             **dap_meta
@@ -691,6 +745,7 @@ def getMACA(
         timeRes   = 'day',
         model     = 'CCSM4', 
         scenario  = 'rcp45', 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -708,6 +763,7 @@ def getMACA(
         timeRes (str): Time resolution. Either "mmonth" or "day". Default is 'day'.
         model (str): Model name. Default is 'CCSM4'.
         scenario (str): Scenario name. Default is 'rcp45'.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -730,7 +786,9 @@ def getMACA(
         endDate   = endDate,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -749,6 +807,7 @@ def getCHIRPS(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -762,6 +821,7 @@ def getCHIRPS(
         varname (str): variable name to extract (e.g. tmin).
         startDate (str): start date of data to be downloaded (YYYY-MM-DD). Default is None.
         endDate (str): end date of data to be downloaded (YYYY-MM-DD). Default is None.
+        dopar (bool): use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): print verbose output. Default is False.
     """
 
@@ -790,7 +850,9 @@ def getCHIRPS(
         endDate   = endDate,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -809,6 +871,7 @@ def getLOCA(
         endDate   = None, 
         model     = 'CCSM4',
         scenario  = 'rcp45',
+        dopar     = True,
         verbose   = False
         ):
     
@@ -828,6 +891,7 @@ def getLOCA(
         endDate (str): End date in the form "YYYY-MM-DD"
         model (str): Model name. Default is 'CCSM4'.
         scenario (str): Scenario name. Default is 'rcp45'.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -846,7 +910,9 @@ def getLOCA(
         scenario  = scenario,
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -861,6 +927,7 @@ def getLOCA(
 def getPolaris(
         AOI       = None,
         varname   = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -883,7 +950,9 @@ def getPolaris(
         varname   = varname, 
         verbose   = verbose
         )
-
+    
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -901,6 +970,7 @@ def getWorldClim(
         varname   = None,
         date 	  = None,
         res       = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -911,6 +981,7 @@ def getWorldClim(
         varname (str, list): Variable name(s) to download.
         date (str): date in the form "YYYY-MM-DD"
         res (str): Resolution of data to download. One of: "10m", "5m", "2.5m", "30s". Default is "10m".
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -933,6 +1004,8 @@ def getWorldClim(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -948,8 +1021,7 @@ def getWorldClim(
 def getISRIC_soils(
         AOI       = None,
         varname   = None,
-        date 	  = None,
-        res       = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -958,6 +1030,7 @@ def getISRIC_soils(
     Args:
         AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
         varname (str, list): Variable name(s) to download.
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -972,6 +1045,8 @@ def getISRIC_soils(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -986,6 +1061,7 @@ def getISRIC_soils(
 def get3DEP(
         AOI       = None,
         res       = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -994,6 +1070,7 @@ def get3DEP(
     Args:
         AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
         res (str): Resolution of data to download. One of: "10m", "30m". Default is "30m".
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -1016,6 +1093,8 @@ def get3DEP(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+    
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -1029,6 +1108,7 @@ def get3DEP(
 
 def getNASADEM(
         AOI       = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -1036,6 +1116,7 @@ def getNASADEM(
 
     Args:
         AOI (shapely.geometry.polygon.Polygon): Area of interest as a shapely polygon or geopandas dataframe
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -1050,6 +1131,8 @@ def getNASADEM(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -1067,6 +1150,7 @@ def AquaGoesSSTAnom(
         startDate = None,
         endDate   = None,
         units     = None,
+        dopar     = True,
         verbose   = False
         ):
     
@@ -1078,6 +1162,7 @@ def AquaGoesSSTAnom(
         startDate (str): Start date in "YYYY-MM-DD" format.
         endDate (str): End date in "YYYY-MM-DD" format.
         units: temperature units to return data in "C" or "F". Default is "C".
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -1100,6 +1185,8 @@ def AquaGoesSSTAnom(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta
@@ -1117,6 +1204,7 @@ def getLCMAP(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        dopar     = True,
         verbose   = False
         ):
     
@@ -1127,6 +1215,7 @@ def getLCMAP(
         varname (str, list): Variable name(s) to download.
         startDate (str): Start date in the form "YYYY-MM-DD"
         endDate (str): End date in the form "YYYY-MM-DD"
+        dopar (bool): Use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): Print verbose output. Default is False.
 
     Returns:
@@ -1143,6 +1232,8 @@ def getLCMAP(
         verbose   = verbose
         )
     
+    dap_meta['dopar'] = dopar
+
     # need to provide dap_meta dictionary object directly as input
     dap_data = dap.dap(
         **dap_meta

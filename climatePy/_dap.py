@@ -289,8 +289,47 @@ def dap(
         dopar       = True,
         verbose     = False
         ):
+
+        """Get Data (Data Access Protocol)
+
+        This function provides a consistent data access protocol (DAP) to a wide
+        range of local and remote resources including VRT, TDS, NetCDF.
         
-        """Get data from a DAP server"""
+        Define and get data from a DAP resource.
+        
+        Parameters:
+        - URL: str, optional
+            Local file path or URL.
+        - catalog: object, optional
+            Subset of open.dap catalog.
+        - AOI: object, optional
+            List containing an extent() and crs.
+        - startDate: object, optional
+            For non "dated" items, start can be called by index.
+        - endDate: object, optional
+            For non "dated" items, end can be called by index.
+        - varname: object, optional
+            Variable name.
+        - grid: object, optional
+            A list containing an extent() and crs.
+        - start: object, optional
+            For non "dated" items, start can be called by index.
+        - end: object, optional
+            For non "dated" items, end can be called by index.
+        - toptobottom: bool, optional
+            Should data be inverse?
+        - dopar: bool, if True, parallelize the download of the data 
+        - verbose: bool, optional
+            Should dap_summary be printed?
+        
+        Details:
+        Wraps dap_get and dap_crop into one.
+        If AOI is None, no spatial crop is executed.
+        If startDate and endDate are None, no temporal crop is executed.
+        If only endDate is None, it defaults to the startDate.
+        
+        Returns: dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+        """
     
 
         if not isinstance(toptobottom, bool):
