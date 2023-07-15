@@ -371,7 +371,18 @@ def dap(
 
             # set URL to list of URLS
             URL = url_lst
-
+            
+        # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
+        if isinstance(AOI, (shapely.geometry.point.Point, 
+                            shapely.geometry.multipoint.MultiPoint,
+                            shapely.geometry.linestring.LineString, 
+                            shapely.geometry.multilinestring.MultiLineString, 
+                            shapely.geometry.polygon.Polygon, 
+                            shapely.geometry.multipolygon.MultiPolygon)):
+            
+            # convert shapely geometry to geopandas dataframe
+            AOI = climatepy_filter.shapely_to_gpd(AOI)
+            
         # check if "vrt" or "tif" in URL list, or if "vsi" in all of URL list
         if any([utils.getExtension(i) in ['vrt', "tif"] for i in URL]) or all(["vsi" in i for i in URL]):
 
