@@ -55,51 +55,6 @@ def get_max_bbox(AOI):
     
     return max_bbox.iloc[0]
 
-def shapely_to_gpd(AOI):
-
-    """Convert a Shapely object to a GeoDataFrame.
-
-    Args:
-        AOI (shapely.geometry.base.BaseGeometry): The area of interest as a Shapely object.
-
-    Returns:
-        GeoDataFrame: A GeoDataFrame representing the area of interest.
-            The GeoDataFrame has a single geometry column with an automatically assigned CRS (either EPSG:4326 or EPSG:5070)
-
-    Note:
-        The function assumes that the shapely AOI is in either WGS84 (EPSG:4326) or NAD83 (EPSG:5070) coordinate system.
-    """
-
-    # convex hull
-    chull = AOI.convex_hull
-
-    # check if convex hull is a point or a polygon
-    if isinstance(chull, shapely.geometry.point.Point):
-        xx, yy = chull.coords.xy
-    else:
-        xx, yy = chull.exterior.coords.xy
-
-    # bounding box
-    xmax = np.asarray(xx).max()
-    xmin = np.asarray(xx).min()
-    ymax = np.asarray(yy).max()
-    ymin = np.asarray(yy).min()
-
-    # check if AOI is in WGS84 or NAD83
-    if (ymax >= -90 and ymax <= 90
-        and ymin <= 90 and ymin >= -90
-        and xmax >= -180 and xmax <= 180
-        and xmin <= 180 and xmin >= -180):
-        print("Assuming AOI CRS is EPSG:4326 (WGS84)")
-        crs = CRS.from_epsg(4326)
-    else:
-        print("Assuming AOI CRS is EPSG:5070 (NAD83)")
-        crs = CRS.from_epsg(5070)
-
-    out = gpd.GeoDataFrame(geometry = [AOI], crs = crs)
-
-    return out
-
 def find_intersects(catalog, AOI):
     """Check for catalog rows intersecting with the given AOI.
 
@@ -295,16 +250,19 @@ def climatepy_filter(
             elif isinstance(scenario, list):
                 catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
 
-    # # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
-    if isinstance(AOI, (shapely.geometry.point.Point, 
-            shapely.geometry.multipoint.MultiPoint,
-            shapely.geometry.linestring.LineString, 
-            shapely.geometry.multilinestring.MultiLineString, 
-            shapely.geometry.polygon.Polygon, 
-            shapely.geometry.multipolygon.MultiPolygon)):
+    # # # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
+    # if isinstance(AOI, (shapely.geometry.point.Point, 
+    #         shapely.geometry.multipoint.MultiPoint,
+    #         shapely.geometry.linestring.LineString, 
+    #         shapely.geometry.multilinestring.MultiLineString, 
+    #         shapely.geometry.polygon.Polygon, 
+    #         shapely.geometry.multipolygon.MultiPolygon)):
         
-        # convert shapely geometry to geopandas dataframe
-        AOI = shapely_to_gpd(AOI)
+    #     # convert shapely geometry to geopandas dataframe
+    #     AOI = utils.shapely_to_gpd(AOI)
+
+    # check that AOI meets requirements, if a shapely geometry the AOI is transformed into a geodataframe
+    AOI = utils.check_aoi(AOI)
 
     # 5. AOI filter
     if AOI is not None:
@@ -532,3 +490,48 @@ def climatepy_filter(
 #     catalog = catalog[~catalog.drop(['URL'], axis=1).duplicated()]
 
 #     return catalog
+
+# def shapely_to_gpd(AOI):
+
+#     """Convert a Shapely object to a GeoDataFrame.
+
+#     Args:
+#         AOI (shapely.geometry.base.BaseGeometry): The area of interest as a Shapely object.
+
+#     Returns:
+#         GeoDataFrame: A GeoDataFrame representing the area of interest.
+#             The GeoDataFrame has a single geometry column with an automatically assigned CRS (either EPSG:4326 or EPSG:5070)
+
+#     Note:
+#         The function assumes that the shapely AOI is in either WGS84 (EPSG:4326) or NAD83 (EPSG:5070) coordinate system.
+#     """
+
+#     # convex hull
+#     chull = AOI.convex_hull
+
+#     # check if convex hull is a point or a polygon
+#     if isinstance(chull, shapely.geometry.point.Point):
+#         xx, yy = chull.coords.xy
+#     else:
+#         xx, yy = chull.exterior.coords.xy
+
+#     # bounding box
+#     xmax = np.asarray(xx).max()
+#     xmin = np.asarray(xx).min()
+#     ymax = np.asarray(yy).max()
+#     ymin = np.asarray(yy).min()
+
+#     # check if AOI is in WGS84 or NAD83
+#     if (ymax >= -90 and ymax <= 90
+#         and ymin <= 90 and ymin >= -90
+#         and xmax >= -180 and xmax <= 180
+#         and xmin <= 180 and xmin >= -180):
+#         print("Assuming AOI CRS is EPSG:4326 (WGS84)")
+#         crs = CRS.from_epsg(4326)
+#     else:
+#         print("Assuming AOI CRS is EPSG:5070 (NAD83)")
+#         crs = CRS.from_epsg(5070)
+
+#     out = gpd.GeoDataFrame(geometry = [AOI], crs = crs)
+
+#     return out
