@@ -235,10 +235,16 @@ def dap_crop(
                 catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
                 catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
 
-                catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
-                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
-                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
-                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+                catalog.at[i, 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+
+                # catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
+                # catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
+                # catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
+                # catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+
                 catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
                 catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
     
