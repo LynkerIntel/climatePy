@@ -21,6 +21,7 @@ from ._shortcuts import getTerraClim, getTerraClimNormals, getGridMET, getMACA, 
     getBCCA, getLivneh, getLivneh_fluxes, getISRIC_soils, getDaymet, \
     getVIC, getNASADEM, getWorldClim, getCHIRPS, getLCMAP, getNLDAS, getGLDAS, getMODIS
 from ._netrc_utils import writeDodsrc, writeNetrc, getNetrcPath, getDodsrcPath, checkNetrc, checkDodsrc
+from ._extract_sites import extract_sites
 
 __all__ = [
     'params',
@@ -49,6 +50,7 @@ __all__ = [
     'getNLDAS',
     'getGLDAS',
     'getMODIS',
+    'extract_sites',
     'writeDodsrc',
     'writeNetrc',
     'getNetrcPath',
