@@ -567,17 +567,33 @@ def var_to_da(var, dap_row):
     names_ts = names_ts.replace("__", "_")
     names_ts = names_ts.rstrip("_")
 
-    # if dap_row has 1 column and 1 row, or 1 key/value
-    if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
-        # reshape var into a 2D array
-        var_2d = var.reshape((len(dates), -1))
+    # # if dap_row has 1 column and 1 row, or 1 key/value
+    # if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
+    #     # reshape var into a 2D array
+    #     var_2d = var.reshape((len(dates), -1))
 
+    #     # create a dictionary of column names and values
+    #     var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+    #     var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+
+    #     # create a DataFrame with dates and var_dict as columns
+    #     df = pd.DataFrame({'date': dates, **var_dict})
+
+    # if dap_row has 1 column and 1 row, or 1 key/value
+    if dap_row['ncols'] == 1 and dap_row['nrows'] == 1:
+        # reshape var into a 2D array
+        # var_2d = var.reshape((len(dates), -1))
+ 
         # create a dictionary of column names and values
-        var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
-        var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+        # var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+        # var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
 
         # create a DataFrame with dates and var_dict as columns
-        df = pd.DataFrame({'date': dates, **var_dict})
+        # df = pd.DataFrame({'date': dates, **var_dict})
+        # create a DataArray with dates and the variable array as the other column
+        df = pd.DataFrame({'date': dates, names_ts:np.squeeze(var.values)})
+        
+        return df
 
     # x resolution
     resx = (dap_row['Xn'] - dap_row['X1'])/(dap_row['ncols'] - 1)
@@ -793,6 +809,14 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
 
             x = go_get_dap_data(dap_row = dap_data.iloc[i].to_dict())
             out.append(x)
+
+    # If out returns a list of dataframes (typically because a single point was given as the AOI),
+    # then process the list of dataframes into a single dataframe and return it (timeseries data of the point)
+    if isinstance(out[0], pd.core.frame.DataFrame):
+        
+        out = utils.aggreg_pt_dataframes(out)
+
+        return out
     
     # add variable name attribute to each DataArray in the output list
     add_varname_attr(

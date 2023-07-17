@@ -25,7 +25,7 @@ from . import params
 import warnings
 
 # suppress warnings
-warnings.filterwarnings('ignore', category=Warning)
+# warnings.filterwarnings('ignore', category=Warning)
 
 ################################
 
@@ -182,22 +182,38 @@ def climatepy_filter(
         # unique models
         u = catalog['model'].unique()
 
+        # if model is an integer or float, randomly select that many models
+        if isinstance(model, (int, float)):
+            # convert float to integer
+            if isinstance(model, float):
+                model = int(model)
+            if len(u) >= model:
+                model = np.random.choice(u, model, replace=False).tolist()
+            else:
+                raise ValueError(f"There are only {len(u)} unique models.")
         if isinstance(model, str):
-            if model not in u:
+            if model in u:
+                catalog = catalog[catalog['model'] == model]
+                # catalog = catalog[catalog['model'].str.contains(model, na=False)]
+
+                # set model to list
+                model = [model]
+            else:
+            # if model not in u:
                 bad = model
                 m = catalog[['model', 'ensemble']].drop_duplicates()
                 message = f"'{bad}' not avaliable model for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
                 raise Exception(message)
-            catalog = catalog[catalog['model'].str.contains(model)]
+            # catalog = catalog[catalog['model'].str.contains(model, na=False)]
         elif isinstance(model, list):
-            if not all(elem in u for elem in model):
+            if all(elem in u for elem in model):
+                catalog = catalog[catalog['model'].isin(model)]
+                # catalog = catalog[catalog['model'].str.contains('|'.join(model), na=False)]
+            else:
                 bad = list(set(model) - set(u))
                 m = catalog[['model', 'ensemble']].drop_duplicates()
                 message = f"'{bad}' not avaliable model for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
                 raise Exception(message)
-            catalog = catalog[catalog['model'].str.contains('|'.join(model))]
-        # else:
-        #     catalog = catalog[catalog['model'].str.contains('|'.join(model))]
 
     # 2. varname filter 
     if varname is not None:
@@ -246,10 +262,43 @@ def climatepy_filter(
 
         if scenario is not None:
             if isinstance(scenario, str):
-                catalog = catalog[catalog['scenario'].str.contains(scenario)]
+                catalog = catalog[catalog['scenario'].str.contains(scenario, na=False)]
+                # catalog = catalog[catalog['scenario'].str.contains(scenario)]
             elif isinstance(scenario, list):
-                catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
+                catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario), na=False)]
+                # catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
 
+    # 5. ensemble filter
+    if ensemble is not None:
+        if isinstance(ensemble, str):
+            ensemble = [ensemble]
+
+        # if ensemble is not None and there are more or less ensembles than there are models, groupby model and ensemble:
+        if model is not None and len(ensemble) != len(model):
+            catalog = (catalog
+                        .groupby(['model', 'ensemble'])
+                        .first()
+                        .reset_index()
+                        )
+        else:
+            # unique ensembles
+            u = catalog['ensemble'].unique()
+
+            # if there are more than one ensemble and ensemble is NULL, default to the first ensemble
+            if len(u) > 1 and ensemble is None:
+                warnings.warn(f"There are {len(u)} ensembles available. Since ensemble was left NULL, we default to {u[0]}.", UserWarning)
+                catalog = catalog[catalog['ensemble'].isin([u[0]])]
+            elif ensemble is None:
+                catalog = catalog
+            else:
+                if all(item in u for item in ensemble):
+                    catalog = catalog[catalog['ensemble'].isin(ensemble)]
+                else:
+                    bad = list(set(ensemble) - set(u))
+                    m = catalog[['model', 'ensemble']].drop_duplicates()
+                    message = f"'{bad}' not avaliable ensemble for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
+                    raise Exception(message)
+            
     # # # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
     # if isinstance(AOI, (shapely.geometry.point.Point, 
     #         shapely.geometry.multipoint.MultiPoint,
@@ -264,7 +313,7 @@ def climatepy_filter(
     # check that AOI meets requirements, if a shapely geometry the AOI is transformed into a geodataframe
     AOI = utils.check_aoi(AOI)
 
-    # 5. AOI filter
+    # 6. AOI filter
     if AOI is not None:
         catalog = find_intersects(
             catalog = catalog,

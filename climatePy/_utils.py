@@ -19,6 +19,52 @@ import warnings
 # suppress warnings
 warnings.filterwarnings('ignore', category=Warning)
 
+def aggreg_pt_dataframes(df_list):
+    """
+    Process, concatenate, and pivot a list of Pandas DataFrames and return a wide DataFrame
+    with a column for the 'date' and a separate column for each variable that data was retrieved for.
+
+    This function is for internal use only and runs only if a list of dataframes is returned from 'go_get_dap_data'. 
+    Handles the cases when a point is given to `dap()` and the return data results in a single grid cell.
+
+    Args:
+        out (list): A list of pandas DataFrames returned from 'go_get_dap_data' function calls.
+
+    Returns:
+        pandas.DataFrame: A wide DataFrame with a 'date' column and separate columns for each variable.
+    """
+
+    # Loop through each dataframe in df_list
+    for i in range(len(df_list)):
+        # print(f"i: {i}")
+        
+        # Column names of dataframe
+        colnames = df_list[i].columns
+        
+        # Extract column names that are NOT the "date" column
+        id_row = "".join(colnames[colnames != "date"])
+        # [c for c in out[i].columns if c != "date"]
+        # print(f"id_row: {id_row}")
+        
+        # Set column names to "date" and "value"
+        df_list[i].columns = ["date", "value"]
+        
+        # Give the original dataset name, that was stored as a column header, as a new "name" column in the dataframe
+        df_list[i]["name"] = id_row
+        
+        # print(f'-----------')
+    
+    # Concatenate the list of dataframes into a single dataframe
+    df_list = pd.concat(df_list, axis=0)
+    
+    # Pivot data from long to wide
+    df_list = df_list.pivot(index="date", columns="name", values="value")
+    
+    # Reset date index
+    df_list = df_list.reset_index()
+    
+    return df_list
+
 def shapely_to_gpd(AOI):
 
     """Convert a Shapely object to a GeoDataFrame.
@@ -94,6 +140,15 @@ def check_aoi(AOI):
             AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=AOI.crs)
             # bb = AOI.geometry.total_bounds
             # AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(bb[0], bb[1], bb[2], bb[3])], crs=AOI.crs)
+
+            return AOI
+        
+        # if single geometry and its a point, create a bounding box around the point w/ a small buffer
+        if AOI.geometry.geom_type.to_list()[0] == "Point":
+            xmin, ymin, xmax, ymax = AOI.buffer(0.005).geometry.total_bounds
+            # xmin, ymin, xmax, ymax = AOI.geometry.total_bounds
+            
+            AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=AOI.crs)
 
             return AOI
         
