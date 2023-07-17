@@ -28,6 +28,9 @@ from joblib import Parallel, delayed
 from . import _utils as utils
 from . import _climatepy_filter as climatepy_filter
 
+# from climatePy import _utils as utils
+# from climatePy import _climatepy_filter as climatepy_filter
+
 # warnings lib
 import warnings
 
@@ -40,10 +43,9 @@ warnings.filterwarnings('ignore', category=Warning)
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
 # from climatePy import _utils, climatepy_filter
-# import ._utils as utils
-# import ._climatepy_filter as climatepy_filter
-# import _utils as utils
-# import _climatepy_filter as climatepy_filter
+
+######################################################
+######################################################
 
 def dap_crop(
     URL       = None,
@@ -233,10 +235,16 @@ def dap_crop(
                 catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
                 catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
 
-                catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
-                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
-                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
-                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+                catalog.at[i, 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+
+                # catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
+                # catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
+                # catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
+                # catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+
                 catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
                 catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
     
@@ -287,8 +295,48 @@ def dap(
         dopar       = True,
         verbose     = False
         ):
+
+        """Get Data (Data Access Protocol)
+
+        This function provides a consistent data access protocol (DAP) to a wide
+        range of local and remote resources including VRT, TDS, NetCDF.
         
-        """Get data from a DAP server"""
+        Define and get data from a DAP resource.
+        
+        Parameters:
+        - URL: str, optional
+            Local file path or URL.
+        - catalog: object, optional
+            Subset of open.dap catalog.
+        - AOI: object, optional
+            List containing an extent() and crs.
+        - startDate: object, optional
+            For non "dated" items, start can be called by index.
+        - endDate: object, optional
+            For non "dated" items, end can be called by index.
+        - varname: object, optional
+            Variable name.
+        - grid: object, optional
+            A list containing an extent() and crs.
+        - start: object, optional
+            For non "dated" items, start can be called by index.
+        - end: object, optional
+            For non "dated" items, end can be called by index.
+        - toptobottom: bool, optional
+            Should data be inverse?
+        - dopar: bool, if True, parallelize the download of the data 
+        - verbose: bool, optional
+            Should dap_summary be printed?
+        
+        Details:
+        Wraps dap_get and dap_crop into one.
+        If AOI is None, no spatial crop is executed.
+        If startDate and endDate are None, no temporal crop is executed.
+        If only endDate is None, it defaults to the startDate.
+        
+        Returns: dictionary of xarray.DataArray(s): xarray DataArray containing climate data
+        """
+    
 
         if not isinstance(toptobottom, bool):
 
@@ -329,7 +377,21 @@ def dap(
 
             # set URL to list of URLS
             URL = url_lst
+            
+        # # If AOI is a shapely geometry, convert AOI into geodataframe
+        # if isinstance(AOI, (shapely.geometry.point.Point, 
+        #                     shapely.geometry.multipoint.MultiPoint,
+        #                     shapely.geometry.linestring.LineString, 
+        #                     shapely.geometry.multilinestring.MultiLineString, 
+        #                     shapely.geometry.polygon.Polygon, 
+        #                     shapely.geometry.multipolygon.MultiPolygon)):
+            
+        #     # convert shapely geometry to geopandas dataframe
+        #     AOI = utils.shapely_to_gpd(AOI)
 
+        # check that AOI meets requirements, if a shapely geometry the AOI is transformed into a geodataframe
+        AOI = utils.check_aoi(AOI)
+            
         # check if "vrt" or "tif" in URL list, or if "vsi" in all of URL list
         if any([utils.getExtension(i) in ['vrt', "tif"] for i in URL]) or all(["vsi" in i for i in URL]):
 
@@ -505,17 +567,33 @@ def var_to_da(var, dap_row):
     names_ts = names_ts.replace("__", "_")
     names_ts = names_ts.rstrip("_")
 
-    # if dap_row has 1 column and 1 row, or 1 key/value
-    if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
-        # reshape var into a 2D array
-        var_2d = var.reshape((len(dates), -1))
+    # # if dap_row has 1 column and 1 row, or 1 key/value
+    # if len(dap_row.keys()) == 1 and len(dap_row.values()) == 1:
+    #     # reshape var into a 2D array
+    #     var_2d = var.reshape((len(dates), -1))
 
+    #     # create a dictionary of column names and values
+    #     var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+    #     var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+
+    #     # create a DataFrame with dates and var_dict as columns
+    #     df = pd.DataFrame({'date': dates, **var_dict})
+
+    # if dap_row has 1 column and 1 row, or 1 key/value
+    if dap_row['ncols'] == 1 and dap_row['nrows'] == 1:
+        # reshape var into a 2D array
+        # var_2d = var.reshape((len(dates), -1))
+ 
         # create a dictionary of column names and values
-        var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
-        var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
+        # var_dict = {f'var_{i}': var_2d[:, i] for i in range(var_2d.shape[1])}
+        # var_dict = {key.replace("var_", f'{names_ts}_'): var_dict[key] for key in var_dict.keys()}
 
         # create a DataFrame with dates and var_dict as columns
-        df = pd.DataFrame({'date': dates, **var_dict})
+        # df = pd.DataFrame({'date': dates, **var_dict})
+        # create a DataArray with dates and the variable array as the other column
+        df = pd.DataFrame({'date': dates, names_ts:np.squeeze(var.values)})
+        
+        return df
 
     # x resolution
     resx = (dap_row['Xn'] - dap_row['X1'])/(dap_row['ncols'] - 1)
@@ -533,7 +611,8 @@ def var_to_da(var, dap_row):
         var = np.expand_dims(var, axis=-1)
     
     # check if size of first dimension of 'var' is equals number of rows in 'dap'
-    if var.shape[2] != dap_row["nrows"]:
+    if var.shape[2] != dap_row["nrows"] or dap_row["nrows"] == dap_row["ncols"]:
+    # if var.shape[2] != dap_row["nrows"]:
         # transpose the first two dimensions of 'var' if not in correct order
         var = var.transpose(dap_row["Y_name"], dap_row["X_name"], dap_row["T_name"])
         # var2 = var.transpose(dap_row["T_name"], dap_row["X_name"],  dap_row["Y_name"])
@@ -730,6 +809,14 @@ def dap_get(dap_data, dopar = True, varname = None, verbose = False):
 
             x = go_get_dap_data(dap_row = dap_data.iloc[i].to_dict())
             out.append(x)
+
+    # If out returns a list of dataframes (typically because a single point was given as the AOI),
+    # then process the list of dataframes into a single dataframe and return it (timeseries data of the point)
+    if isinstance(out[0], pd.core.frame.DataFrame):
+        
+        out = utils.aggreg_pt_dataframes(out)
+
+        return out
     
     # add variable name attribute to each DataArray in the output list
     add_varname_attr(
@@ -1310,7 +1397,7 @@ def vrt_crop_get(
 
     if verbose:
         print("Opening VRT from URL: ", URL)
- 
+
     # Area of interest
     vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
 
@@ -1356,67 +1443,67 @@ def vrt_crop_get(
     return vrts
 
 def parse_date(duration, interval):
-        """Parse the date range based on the duration and interval.
+    """Parse the date range based on the duration and interval.
 
-        Args:
-            duration (str): The duration string in the format "start_date/end_date".
-            interval (str): The interval string specifying the time unit.
-        
-        Returns:
-            pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
-        """
-        
-        # split duration string
-        d = duration.split("/")
-        
-        # if end date is "..", set it to today's date
-        if d[1] == "..":
-                d[1] = datetime.now().strftime("%Y-%m-%d")
+    Args:
+        duration (str): The duration string in the format "start_date/end_date".
+        interval (str): The interval string specifying the time unit.
+    
+    Returns:
+        pd.DatetimeIndex: A pandas DatetimeIndex representing the parsed date range.
+    """
+    
+    # split duration string
+    d = duration.split("/")
+    
+    # if end date is "..", set it to today's date
+    if d[1] == "..":
+            d[1] = datetime.now().strftime("%Y-%m-%d")
 
-        # if interval in ["1 month", "1 months"]:
-        if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
-        # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
+    # if interval in ["1 month", "1 months"]:
+    if any(keyword in interval for keyword in ["1 month", "1 months", "monthly"]):
+    # if any(keyword in interval for keyword in ["1 month", "1 months", "31 days", "monthly"]):
+            d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-01")
 
-        # if interval in ["hour", "hours"]:
-        if any(keyword in interval for keyword in ["hour", "hours"]):
-                d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
-                d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
+    # if interval in ["hour", "hours"]:
+    if any(keyword in interval for keyword in ["hour", "hours"]):
+            d[0] = datetime.strptime(d[0], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
+            d[1] = datetime.strptime(d[1], "%Y-%m-%d").strftime("%Y-%m-%d %H:%M:%S")
 
-        # if interval is 31 days, change to 1 month
-        if interval in ["31 days","31.5 days"]:
-            interval = "1 month"
+    # if interval is 31 days, change to 1 month
+    if interval in ["31 days","31.5 days"]:
+        interval = "1 month"
 
-        # if interval is 365, 365.5 days, change to 1 year
-        if interval in ["365 days","365.5 days"]:
-            interval = "1 year"
+    # if interval is 365, 365.5 days, change to 1 year
+    if interval in ["365 days","365.5 days"]:
+        interval = "1 year"
 
-        interval_map = {
-            "hour": "H",
-            "hours": "H",
-            "minute": "min",
-            "minutes": "min",
-            "second": "S",
-            "seconds": "S",
-            "month": "MS",  # Month Start
-            "months": "MS"  # Month Start
-            }
-        
-        # split interval string
-        interval_type = interval.split(" ")[-1]
+    interval_map = {
+        "hour": "H",
+        "hours": "H",
+        "minute": "min",
+        "minutes": "min",
+        "second": "S",
+        "seconds": "S",
+        "month": "MS",  # Month Start
+        "months": "MS"  # Month Start
+        }
+    
+    # split interval string
+    interval_type = interval.split(" ")[-1]
 
-        # get frequency from interval_map
-        freq = interval_map.get(interval_type, interval_type[0])
-        
-        # # convert start_date and end_date to pandas Timestamp objects
-        # start_date = pd.Timestamp(d[0])
-        # end_date = pd.Timestamp(d[1])
-        # # calculate the number of days between start and end dates
-        # delta = (end_date - start_date) / (nT - 1)
-        # # generate the date range
-        # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
+    # get frequency from interval_map
+    freq = interval_map.get(interval_type, interval_type[0])
+    
+    # # convert start_date and end_date to pandas Timestamp objects
+    # start_date = pd.Timestamp(d[0])
+    # end_date = pd.Timestamp(d[1])
+    # # calculate the number of days between start and end dates
+    # delta = (end_date - start_date) / (nT - 1)
+    # # generate the date range
+    # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
 
-        return pd.date_range(start=d[0], end=d[1], freq=freq)
+    return pd.date_range(start=d[0], end=d[1], freq=freq)
 
 # def parse_date2(duration, nT):
     # duration = catalog["duration"].iloc[i]

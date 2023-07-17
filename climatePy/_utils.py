@@ -19,8 +19,154 @@ import warnings
 # suppress warnings
 warnings.filterwarnings('ignore', category=Warning)
 
+def aggreg_pt_dataframes(df_list):
+    """
+    Process, concatenate, and pivot a list of Pandas DataFrames and return a wide DataFrame
+    with a column for the 'date' and a separate column for each variable that data was retrieved for.
+
+    This function is for internal use only and runs only if a list of dataframes is returned from 'go_get_dap_data'. 
+    Handles the cases when a point is given to `dap()` and the return data results in a single grid cell.
+
+    Args:
+        out (list): A list of pandas DataFrames returned from 'go_get_dap_data' function calls.
+
+    Returns:
+        pandas.DataFrame: A wide DataFrame with a 'date' column and separate columns for each variable.
+    """
+
+    # Loop through each dataframe in df_list
+    for i in range(len(df_list)):
+        # print(f"i: {i}")
+        
+        # Column names of dataframe
+        colnames = df_list[i].columns
+        
+        # Extract column names that are NOT the "date" column
+        id_row = "".join(colnames[colnames != "date"])
+        # [c for c in out[i].columns if c != "date"]
+        # print(f"id_row: {id_row}")
+        
+        # Set column names to "date" and "value"
+        df_list[i].columns = ["date", "value"]
+        
+        # Give the original dataset name, that was stored as a column header, as a new "name" column in the dataframe
+        df_list[i]["name"] = id_row
+        
+        # print(f'-----------')
+    
+    # Concatenate the list of dataframes into a single dataframe
+    df_list = pd.concat(df_list, axis=0)
+    
+    # Pivot data from long to wide
+    df_list = df_list.pivot(index="date", columns="name", values="value")
+    
+    # Reset date index
+    df_list = df_list.reset_index()
+    
+    return df_list
+
+def shapely_to_gpd(AOI):
+
+    """Convert a Shapely object to a GeoDataFrame.
+
+    Args:
+        AOI (shapely.geometry.base.BaseGeometry): The area of interest as a Shapely object.
+
+    Returns:
+        GeoDataFrame: A GeoDataFrame representing the area of interest.
+            The GeoDataFrame has a single geometry column with an automatically assigned CRS (either EPSG:4326 or EPSG:5070)
+
+    Note:
+        The function assumes that the shapely AOI is in either WGS84 (EPSG:4326) or NAD83 (EPSG:5070) coordinate system.
+    """
+
+    # convex hull
+    chull = AOI.convex_hull
+
+    # check if convex hull is a point or a polygon
+    if isinstance(chull, shapely.geometry.point.Point):
+        xx, yy = chull.coords.xy
+    else:
+        xx, yy = chull.exterior.coords.xy
+
+    # bounding box
+    xmax = np.asarray(xx).max()
+    xmin = np.asarray(xx).min()
+    ymax = np.asarray(yy).max()
+    ymin = np.asarray(yy).min()
+
+    # check if AOI is in WGS84 or NAD83
+    if (ymax >= -90 and ymax <= 90
+        and ymin <= 90 and ymin >= -90
+        and xmax >= -180 and xmax <= 180
+        and xmin <= 180 and xmin >= -180):
+        print("Assuming AOI CRS is EPSG:4326 (WGS84)")
+        crs = CRS.from_epsg(4326)
+    else:
+        print("Assuming AOI CRS is EPSG:5070 (NAD83)")
+        crs = CRS.from_epsg(5070)
+
+    out = gpd.GeoDataFrame(geometry = [AOI], crs = crs)
+
+    return out
+
+def check_aoi(AOI):
+
+    """Check that the AOI is in a valid format and change if needed.
+
+    If AOI is a GeoDataFrame or GeoSeries with more than 1 geometry, converts AOI to a GeoDataFrame with a 
+    single geometry representing the total bounds of all the geometries in the GeoDataFrame.
+
+    If AOI is a shapely geometry, converts AOI to a GeoDataFrame with a single geometry representing the AOI.
+
+    Args:
+        AOI (GeoDataFrame, GeoSeries, or shapely.geometry.base.BaseGeometry): The area of interest as a GeoDataFrame, GeoSeries, or Shapely object.
+
+    """
+
+    # check if AOI is None
+    if AOI is None:
+        return None
+    
+    # geodataframe check
+    if isinstance(AOI, (gpd.GeoDataFrame, gpd.GeoSeries)):
+
+        if AOI.crs is None:
+            raise ValueError("AOI GeoDataFrame does not have a CRS attribute. Please set a CRS attribute for the AOI GeoDataFrame.")
+
+        # if more than one row/geometry, change geodataframe to be the total bounds of all the shapes in the geodataframe
+        if len(AOI) > 1: 
+            xmin, ymin, xmax, ymax = AOI.geometry.total_bounds
+            AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=AOI.crs)
+            # bb = AOI.geometry.total_bounds
+            # AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(bb[0], bb[1], bb[2], bb[3])], crs=AOI.crs)
+
+            return AOI
+        
+        # if single geometry and its a point, create a bounding box around the point w/ a small buffer
+        if AOI.geometry.geom_type.to_list()[0] == "Point":
+            xmin, ymin, xmax, ymax = AOI.buffer(0.005).geometry.total_bounds
+            # xmin, ymin, xmax, ymax = AOI.geometry.total_bounds
+            
+            AOI = gpd.GeoDataFrame(geometry=[shapely.geometry.box(xmin, ymin, xmax, ymax)], crs=AOI.crs)
+
+            return AOI
+        
+    # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
+    if isinstance(AOI, (shapely.geometry.point.Point, 
+                        shapely.geometry.multipoint.MultiPoint,
+                        shapely.geometry.linestring.LineString, 
+                        shapely.geometry.multilinestring.MultiLineString, 
+                        shapely.geometry.polygon.Polygon, 
+                        shapely.geometry.multipolygon.MultiPolygon)):
+            
+            # convert shapely geometry to geopandas dataframe
+            AOI = shapely_to_gpd(AOI)
+    
+    return AOI
+
 def getExtension(x):
-    """Get the file extension from a string."""
+    """Extract the file extension from a string"""
 
     dot_pos = x.rfind('.')
     if dot_pos == -1:

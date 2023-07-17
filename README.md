@@ -1,4 +1,4 @@
-# [**climatePy**](https://github.com/LynkerIntel/climatePy)
+# [**climatePy**](https://github.com/anguswg-ucsb/climatePy)
 
 <!-- badges: start -->
 
@@ -24,14 +24,15 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 
 <br>
 
----
+## Links
 
+- [climatePy (Lynker intel)](https://github.com/LynkerIntel/climatePy)
 - [climatePy PyPI](https://pypi.org/project/climatePy/)
-- A slideshow walking through the capabilities of [**climateR/climatePy**](https://mikejohnson51.github.io/climateR-intro/#1)
+- [**climateR/climatePy slideshow**](https://mikejohnson51.github.io/climateR-intro/#1)
 
----
+<br>
 
-## Table of Contents (Optional)
+## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -48,7 +49,7 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 ``` 
 pip install climatePy
 ```
-**Note:** climatePy is still in **development** so expect to run into issues at this point in its lifecycle...
+**Note:** climatePy is still in **development**
 
 <br>
 
@@ -57,12 +58,12 @@ pip install climatePy
 ### Loading climate catalog
 
 ```python
+import climatePy
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from climatePy import params
 
 # load climate catalog
-catalog = params()
+catalog = climatePy.params()
 
 # load example AOI data
 AOI = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
@@ -99,7 +100,7 @@ Now lets use the `getTerraClim()` function from `climatePy` to get precipitation
 
 ```python
 # collect raw meta data
-prcp = shortcuts.getTerraClim(
+prcp = climatePy.getTerraClim(
     AOI       = AOI,
     varname   = "ppt",
     startDate = "2018-01-01",
@@ -117,7 +118,7 @@ We can also get data within a date range. we'll use `getTerraClim()` to get mont
 
 ```python
 # collect raw meta data
-prcp = shortcuts.getTerraClim(
+prcp = climatePy.getTerraClim(
     AOI       = AOI,
     varname   = "ppt",
     startDate = "2018-01-01",
@@ -125,6 +126,27 @@ prcp = shortcuts.getTerraClim(
     )
 ```
 ![2018 precipitation in San Luis Obispo County, CA](assets/images/slo_prcp_facet_plots.png)
+
+<br>
+
+### Data from known bounding coordinates
+
+`climatePy` offers support for `shapely` bounding boxes. Here we are requesting wind velocity data for the four corners region of the USA by bounding coordinates.
+
+```python
+from shapely.geometry import box
+
+bbox = box(-112, 34, -105, 39)
+
+bbox = gpd.GeoDataFrame(geometry=[bbox], crs ='EPSG:4326')
+
+vs = climatePy.getGridMET(
+       AOI       = bbox, 
+       varname   = "vs",
+       startDate = "2018-09-01"
+       )
+```
+![Daily Wind Velocity Four Corners, USA](assets/images/four_corners_gridmet.png)
 
 <br>
 <br>
