@@ -8,7 +8,8 @@ setuptools.setup(
     name="climatePy",                         # pkg name
     # version="0.0.4.24",                        # version
     version='{{VERSION_PLACEHOLDER}}',
-    author="Angus Watters, Mike Johnson",     # authors
+    author="Mike Johnson, Angus Watters",     # authors
+    author_email = "mikecp11@gmail.com, anguswatters@gmail.com"
     description="A Python package for getting point and gridded climate data by AOI",
     long_description=long_description,      # long description is read from the the readme file
     long_description_content_type="text/markdown",
@@ -23,7 +24,7 @@ setuptools.setup(
     # package_dir={'':'climatePy/src'},     #  source code directory of package
     # package_dir={'':'src/climatePy'},     #  source code directory of package
     # package_dir={'':'/climatePy'},     #  source code directory of package
-    install_requires=['pandas', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rtree', 'numpy',
+    install_requires=['pandas', 'geopandas', 'shapely', 'pyproj', 'rasterio', 'xarray', 'rioxarray', 'rtree', 'numpy',
                     'netCDF4', 'joblib'], # dependencies
     include_package_data=True, 
     package_data={'': ['data/*.csv']}     # include catalog csv dataset
