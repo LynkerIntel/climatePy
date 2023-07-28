@@ -5,10 +5,11 @@ import pandas as pd
 import geopandas as gpd
 
 def clean_time(df, col, inplace=False):
+    # regular expression to extract numbers between dashes (date strings)
+    regex_pat = r'(\d+)-'
 
-    regex = r".*?(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})"
-
-    clean_time = [re.match(regex, value).group(1) for value in df[col]]
+    # find all regular expression matches
+    clean_time = ["-".join(re.findall(regex_pat, value)) for value in df[col]]
 
     def correct_date(input_string):
         match = re.match(r'(\d{4}-\d{2}-\d{2})-(.*)', input_string)
@@ -28,23 +29,6 @@ def clean_time(df, col, inplace=False):
         return df
     else:
         return [np.datetime64(correct_date(input_string)) for input_string in clean_time]
-    
-def clean_varname(df, col, inplace=False):
-
-    # regular expression
-    regex = r'^(.*?)\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$'
-
-    # extract text BEFORE date
-    extracted_text = [re.match(regex, value).group(1) for value in df[col]]
-
-    # remove trailing underscores
-    extracted_text = [s.rstrip('_') for s in extracted_text]
-
-    if inplace:
-        df['varname'] = extracted_text
-        return df
-    else:
-        return extracted_text
     
 def pts_extracter(r, pts, id=None):
     """
@@ -77,6 +61,9 @@ def pts_extracter(r, pts, id=None):
     if id is None:
         pts['uid'] = pts.index
         id = 'uid'
+    
+    # make a hashmap of names and index values
+    names_map = {i: v[0] for i, v in enumerate(zip(pts[id], pts.index))}
 
     # transform point to CRS of xarray
     pts = pts.to_crs(r['crs'].values.tolist()) 
@@ -95,18 +82,26 @@ def pts_extracter(r, pts, id=None):
     # select columns of interest
     pts_df = pts_df[['time', varname, id]]
     
+    # replace the dataframe index with the hashmap values
+    pts_df[id] = pts_df[id].map(names_map)
+
     # pivot data wide
     pts_df = pts_df.pivot(index='time', columns=id, values=varname)
 
     # reset index
     pts_df = pts_df.reset_index()
-
-    # extract varname from time column
-    pts_df['varname'] = clean_varname(pts_df, "time", inplace=False)
-    # pts_df['varname'] = varname
+    
+    # # extract varname from time column
+    # pts_df['varname'] = clean_varname(pts_df, "time", inplace=False)
+    # # pts_df['varname'] = varname
 
     # convert time column to datetime
-    pts_df['time'] = clean_time(pts_df, "time")
+    pts_df['time'] = clean_time(df = pts_df, col = "time", inplace=False)
+    # pts_df['time'] = clean_time(pts_df, "time")
+
+    # extract varname from time column
+    pts_df['varname'] = varname
+    # pts_df['varname'] = clean_varname(pts_df, "time", inplace=False)
 
     # rename "time" column to "date"
     pts_df.rename(columns={'time': 'date'}, inplace=True)
@@ -148,10 +143,53 @@ def extract_sites(r, pts, id=None):
             # print(f"key: {key}")
             # print(f"EXTRACTING POINTS FOR VARIABLE: {key}")
 
-            res.append(pts_extracter(r=value, pts=pts, id=None))
+            res.append(pts_extracter(r=value, pts=pts, id=id))
 
             # print(f'---------')
 
         res = pd.concat(res, ignore_index=True)
 
     return res
+
+# def clean_time(df, col, inplace=False):
+
+#     regex = r".*?(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})"
+
+#     clean_time = [re.match(regex, value).group(1) for value in df[col]]
+
+#     def correct_date(input_string):
+#         match = re.match(r'(\d{4}-\d{2}-\d{2})-(.*)', input_string)
+
+#         if match:
+#             date_part = match.group(1)
+#             time_part = match.group(2)
+
+#             formatted_time = re.sub(r'[^a-zA-Z0-9]', ':', time_part)
+
+#             return date_part + 'T' + formatted_time
+
+#         else:
+#             raise ValueError("Invalid input string format.")
+#     if inplace:
+#         df['date'] = [np.datetime64(correct_date(input_string)) for input_string in clean_time]
+#         return df
+#     else:
+#         return [np.datetime64(correct_date(input_string)) for input_string in clean_time]
+    
+# def clean_varname(df, col, inplace=False):
+
+#     # regular expression
+#     regex = r'^(.*?)\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$'
+
+#     # extract text BEFORE date
+#     extracted_text = [re.match(regex, value).group(1) for value in df[col]]
+
+#     # remove trailing underscores
+#     extracted_text = [s.rstrip('_') for s in extracted_text]
+
+#     if inplace:
+#         df['varname'] = extracted_text
+#         return df
+#     else:
+#         return extracted_text
+    

@@ -484,6 +484,7 @@ def match_args(func, *args, **kwargs):
                     args = args[1:]
             else:
                     matched_args[k] = v.default
+                    
     return matched_args
 
 def climatepy_dap(*args, verbose = False, **kwargs):
@@ -492,18 +493,17 @@ def climatepy_dap(*args, verbose = False, **kwargs):
         
         This is an internal function that works to take varied argument inputs and appropriatly match 
         them to climatepy_filter() and dap_crop() functions. 
+
         Args:
             *args: Positional arguments to be matched with parameters of `climatepy_filter` and `dap_crop`.
             verbose (bool, optional): Whether to print verbose output during DAP operations. Defaults to False.
             **kwargs: Keyword arguments to be matched with parameters of `climatepy_filter` and `dap_crop`.
-
         Returns:
             dict: A dictionary containing the matched arguments for DAP operations.
-
         """
 
         # get matching arguments for climatepy_filter function
-        matches1            = match_args(climatepy_filter.climatepy_filter, *args, **kwargs)
+        matches1 = match_args(climatepy_filter.climatepy_filter, *args, **kwargs)
 
         # get catalog from climatepy_filter
         x = climatepy_filter.climatepy_filter(**matches1)
@@ -527,17 +527,18 @@ def climatepy_dap(*args, verbose = False, **kwargs):
         return dap_matches
 
 def var_to_da(var, dap_row):
+
     """Converts a variable to an xarray DataArray with coordinate reference system (CRS).
 
     Args:
         var (numpy.ndarray): The variable to be converted to a DataArray.
         dap_row (pandas.Series): A pandas Series containing metadata information.
-
+        
     Returns:
         xarray.DataArray: The variable converted to a DataArray with CRS included.
 
     """
-
+    
     # var = get_data(dap_row)
     # dap_row = dap_row
 
@@ -621,13 +622,14 @@ def var_to_da(var, dap_row):
     r = xr.DataArray(
         var,
         coords = {
-            'y': -1*np.linspace(ymin, ymax, dap_row['nrows'], endpoint=False),
+            'y': np.linspace(ymax, ymin, dap_row['nrows'], endpoint=False),
+            # 'y': -1*np.linspace(ymin, ymax, dap_row['nrows'], endpoint=False),
             'x': np.linspace(xmin, xmax, dap_row['ncols'], endpoint=False),
             'time': dates,
             'crs': dap_row['crs']
-        },
-        dims=['y', 'x', 'time']
-        )
+            },
+            dims=['y', 'x', 'time']
+            )
 
     # if toptobottom is True, flip the data vertically
     if dap_row['toptobottom']:
