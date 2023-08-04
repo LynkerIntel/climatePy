@@ -551,6 +551,32 @@ def dap_xyzv(ds, varname = None, varmeta = False, var_spec = None, var_spec_long
 
     return raw_df
 
+def match_date_abbr(key):
+    
+    """Match the abbreviated time units to the full time units
+    
+    Args:
+        key (str): The abbreviated time unit.
+    
+    Returns:    
+        str: The full time unit.
+    """
+
+    # map of abbreviated time units to full time units
+    abbr_map = {
+        "H": "hours",
+        "D": "days",
+        "min": "minutes",
+        "S": "seconds",
+        "MS": "months"
+        }
+    
+    if key in abbr_map.keys():
+        return abbr_map[key]
+    else:
+        return key
+
+
 def _resource_time(
         nc     = None,
         T_name = None
