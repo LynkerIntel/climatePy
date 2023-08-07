@@ -808,6 +808,7 @@ def getCHIRPS(
         varname   = None,
         startDate = None, 
         endDate   = None, 
+        timeRes   = "monthly",
         dopar     = True,
         verbose   = False
         ):
@@ -822,11 +823,12 @@ def getCHIRPS(
         varname (str): variable name to extract (e.g. tmin).
         startDate (str): start date of data to be downloaded (YYYY-MM-DD). Default is None.
         endDate (str): end date of data to be downloaded (YYYY-MM-DD). Default is None.
+        timeRes (str): time resolution of data to be downloaded ("monthly", "daily", "annual", "pentad" ). Default is "monthly".
         dopar (bool): use parallel processing. If True multiple workers will fetch data from remote sources in parallel.
         verbose (bool): print verbose output. Default is False.
     """
 
-    timeRes = "monthly"
+    # timeRes = "monthly"
 
     # make sure timeRes is capitalized correctly
     timeRes = " ".join(word.capitalize() for word in timeRes.split())

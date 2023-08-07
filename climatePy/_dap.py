@@ -1487,8 +1487,8 @@ def parse_date(duration, interval):
         "minutes": "min",
         "second": "S",
         "seconds": "S",
-        "month": "MS",  # Month Start
-        "months": "MS"  # Month Start
+        "month": "MS",  # month start
+        "months": "MS"  
         }
     
     # split interval string
@@ -1496,6 +1496,17 @@ def parse_date(duration, interval):
 
     # get frequency from interval_map
     freq = interval_map.get(interval_type, interval_type[0])
+    
+    # if date interval is just a single date or if start and end dates are the same, return a single date date_range 
+    if interval == "0" or d[0] == d[1]:
+
+        # pd.date_range(start=d[0], end=d[1], freq=freq)
+        # pd.date_range(start=d[0], end=d[1])
+
+        # TODO: could also set interval to None within _resource_time() function instead of 0 ...
+        # pd.date_range(start=d[0], end=d[1], freq=None)
+
+        return pd.date_range(start=d[0], end=d[1])
     
     # # convert start_date and end_date to pandas Timestamp objects
     # start_date = pd.Timestamp(d[0])
