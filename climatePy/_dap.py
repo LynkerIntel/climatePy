@@ -54,7 +54,7 @@ def dap_crop(
     startDate = None, 
     endDate   = None,
     varname   = None, 
-    verbose   = False
+    verbose   = True
     ):
     """Crop a catalog entry to a specified area of interest and time period.
     
@@ -65,7 +65,7 @@ def dap_crop(
         startDate (str, optional): The start date of the time period. Defaults to None.
         endDate (str, optional): The end date of the time period. Defaults to None.
         varname (str or list, optional): The variable name(s) to filter the catalog. Defaults to None.
-        verbose (bool, optional): Flag to control verbosity of progress messages. Defaults to Falser.
+        verbose (bool, optional): Whether a summary of data should be printed out. Default is True and a summary is printed.
         
 	Returns:
         pd.DataFrame: The cropped catalog entry.
@@ -80,6 +80,8 @@ def dap_crop(
         catens  = catalog["ensemble"].values
         catsen  = catalog["scenario"].values
         catcrs  = catalog["crs"].values
+        catdesc = catalog['description'].values
+        catunits = catalog['units'].values
 
         catalog = utils.read_dap_file(
             URL                  = URL, 
@@ -87,7 +89,7 @@ def dap_crop(
             var_spec             = catalog["variable"].values,
             var_spec_long        = catalog["varname"].values,
             id                   = "local",
-            varmeta              = verbose, 
+            varmeta              = False, 
             stopIfNotEqualSpaced = True
             )
         
@@ -97,6 +99,8 @@ def dap_crop(
         catalog["model"]    = catmod
         catalog["ensemble"] = catens
         catalog["scenario"] = catsen
+        catalog["description"] = catdesc
+        catalog["units"]       = catunits
 
         # replace None values in col1 with a string
         catalog = catalog.fillna({'crs': catcrs[0]})
@@ -131,8 +135,8 @@ def dap_crop(
         # loop over each row of catalog and do date parsing
         for i in range(len(catalog)): 
 
-            if verbose:
-                print(f'Parsing dates: {i+1}')
+            # if verbose:
+            #     print(f'Parsing dates: {i+1}')
 
             time_steps = parse_date(
                 duration = catalog["duration"].iloc[i], 
@@ -192,9 +196,9 @@ def dap_crop(
             # loop over catalog and filter out rows not in AOI bounding box
             for i in range(len(catalog)):
                 
-                # print messages if verbose is True
-                if verbose: 
-                    print(f'Filtering out rows not in AOI bounding box: ({i+1}/{n})')
+                # # print messages if verbose is True
+                # if verbose: 
+                #     print(f'Filtering out rows not in AOI bounding box: ({i+1}/{n})')
                 
                 # make a bounding box from the catalog row
                 cat_box = utils.make_ext(catalog.iloc[i])
@@ -221,9 +225,9 @@ def dap_crop(
 
             # loop over each row and do X/Y coord mapping
             for i in range(len(catalog)):
-                # print messages if verbose is True
-                if verbose: 
-                    print(f'Mapping X/Y coords: ({i+1}/{n})')
+                # # print messages if verbose is True
+                # if verbose: 
+                #     print(f'Mapping X/Y coords: ({i+1}/{n})')
 
                 X_coords = np.linspace(catalog.iloc[i, catalog.columns.get_loc('X1')], catalog.iloc[i, catalog.columns.get_loc('Xn')], num = int(catalog.iloc[i, catalog.columns.get_loc('ncols')]))
                 
@@ -279,6 +283,10 @@ def dap_crop(
     # catalog["Y"] = None
     # catalog["T"] = None
 
+    # print out summary of resource if verbose is True
+    if verbose:
+        dap_summary(dap_catalog = catalog, url = None)
+
     return catalog
 
 def dap(
@@ -293,7 +301,7 @@ def dap(
         end         = None,
         toptobottom = False,
         dopar       = True,
-        verbose     = False
+        verbose     = True
         ):
 
         """Get Data (Data Access Protocol)
@@ -303,12 +311,11 @@ def dap(
         
         Define and get data from a DAP resource.
         
-        Parameters:
-        - URL: str, optional
+        Args:
+        URL: str, optional
             Local file path or URL.
-        - catalog: object, optional
-            Subset of open.dap catalog.
-        - AOI: object, optional
+        - catalog: pd.Dataframe, optional, Subset of open.dap catalog.
+        - AOI: geopandas.GeoDataFrame or shapely geometry, optional
             List containing an extent() and crs.
         - startDate: object, optional
             For non "dated" items, start can be called by index.
@@ -325,8 +332,8 @@ def dap(
         - toptobottom: bool, optional
             Should data be inverse?
         - dopar: bool, if True, parallelize the download of the data 
-        - verbose: bool, optional
-            Should dap_summary be printed?
+        - verbose: bool,
+            Should dap_summary be printed? Default is True, which will print a summary of data resource
         
         Details:
         Wraps dap_get and dap_crop into one.
@@ -395,8 +402,8 @@ def dap(
         # check if "vrt" or "tif" in URL list, or if "vsi" in all of URL list
         if any([utils.getExtension(i) in ['vrt', "tif"] for i in URL]) or all(["vsi" in i for i in URL]):
 
-            if verbose:
-                print("Getting VRT/TIF data")
+            # if verbose:
+            #     print("Getting VRT/TIF data")
                 
             # get the vrt catalog features for each URL
             vrt_data = vrt_crop_get(
@@ -408,7 +415,7 @@ def dap(
                 start       = start,
                 end         = end,
                 toptobottom = toptobottom,
-                verbose     = False
+                verbose     = verbose
                 )
             
             # # get the vrt catalog features for each URL
@@ -427,8 +434,8 @@ def dap(
             return vrt_data
 
         else:
-            if verbose:
-                print("Getting DAP data")
+            # if verbose:
+            #     print("Getting DAP data")
 
             # get the dap catalog features for each URL
             dap_data = dap_crop(
@@ -438,7 +445,7 @@ def dap(
                 startDate = startDate,
                 endDate   = endDate,
                 varname   = varname,
-                verbose   = False
+                verbose   = verbose
                 )
             
             # if dopar:
@@ -487,7 +494,7 @@ def match_args(func, *args, **kwargs):
                     
     return matched_args
 
-def climatepy_dap(*args, verbose = False, **kwargs):
+def climatepy_dap(*args, verbose = True, **kwargs):
 
         """ClimatePy DAP (DAP).
         
@@ -521,8 +528,8 @@ def climatepy_dap(*args, verbose = False, **kwargs):
         # get matching arguments in climatepy_filter and dap_crop
         dap_matches = {k: matches1[k] for k in matches1 if k in matches2}
 
-        if verbose: 
-            print("dap_matches: ", dap_matches)
+        # if verbose: 
+        #     print("dap_matches: ", dap_matches)
 
         return dap_matches
 
@@ -1281,8 +1288,9 @@ def crop_vrt(urls, AOI, verbose = False):
             dtype   = src.profile['dtype']
             no_data = get_nodata(dtype)
 
-            print("dtype: ", dtype)
-            print("nodata: ", no_data)
+            if verbose:
+                print("dtype: ", dtype)
+                print("nodata: ", no_data)
 
             # out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, invert = False)
             out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, nodata = no_data, invert = False)
@@ -1397,11 +1405,11 @@ def vrt_crop_get(
     if URL is None:
         URL = catalog.URL.to_list()
 
-    if verbose:
-        print("Opening VRT from URL: ", URL)
+    # if verbose:
+    #     print("Opening VRT from URL: ", URL)
 
     # Area of interest
-    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = verbose)
+    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = False)
 
     # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
     #                                     AOI  = AOI,
@@ -1411,13 +1419,14 @@ def vrt_crop_get(
     # check if data needs to be vertically flipped
     for idx, val in enumerate(catalog['toptobottom']):
 
-        if verbose:
-            print("idx:", idx, "val: ",val)
+        # if verbose:
+        #     print("idx:", idx, "val: ",val)
 
         if val and not np.isnan(val):
 
-            if verbose:
-                print("Flipping data vertically")
+            # if verbose:
+            #     print("Flipping data vertically")
+
             # vertically flip each 2D array
             flipped_data = np.flip(vrts[idx].values, axis=0)
 
@@ -1434,13 +1443,17 @@ def vrt_crop_get(
             # add tags back to flipped DataArray
             vrts[idx].attrs = tags
 
-        else:
-            if verbose:
-                print("Not flipping data vertically")
+        # else:
+        #     if verbose:
+        #         print("Not flipping data vertically")
             # vrts[idx] = np.flip(vrts[idx], axis=0)
 
     # create dictionary of DataArrays
     vrts = dict(zip(catalog['variable'], vrts))
+
+    # if verbose is True, print out a summary of the VRTs in the 'vrts' dictionary
+    if verbose:
+        vrt_summary(vrt = vrts, dap_catalog = catalog)
 
     return vrts
 
@@ -1517,6 +1530,297 @@ def parse_date(duration, interval):
     # date_range = pd.date_range(start=start_date, end=end_date, freq=str(int(delta.days))+'D')
 
     return pd.date_range(start=d[0], end=d[1], freq=freq)
+
+
+def dap_summary(dap_catalog = None, url = None):
+
+    """Prints a summary of the dap_catalog dataframe.
+
+    Args:
+        dap_catalog (pd.DataFrame): A dataframe containing the catalog information.
+        url (str): A string containing the URL to the dap_catalog.
+    
+    Returns:
+        None
+    """
+
+    if url is not None and dap_catalog is None:
+        dap_catalog = dap_crop(url)
+    else:
+        resx = (dap_catalog['Xn'] - dap_catalog['X1']) / (dap_catalog['ncols'] - 1)
+        resx = "POINT" if all(dap_catalog['resX'] == "NA") else dap_catalog['resX'].tolist()[0]
+        # resx = "POINT" if resx.values[0] == "NA" else resx.tolist()[0]
+
+        # resx = "POINT" if resx.values[0] == "NA" else resx.values[0] 
+
+        resy = (dap_catalog['Yn'] - dap_catalog['Y1']) / (dap_catalog['nrows'] - 1)
+        resy = "POINT" if all(dap_catalog['resY'] == "NA") else dap_catalog['resY'].tolist()[0]
+
+        # resx = "POINT" if all(dap_catalog['resX'] == "NA") else dap_catalog['resX'].tolist()[0]
+        # resy = "POINT" if all(dap_catalog['resY'] == "NA") else dap_catalog['resY'].tolist()[0]
+        # resx = (dap_catalog['Xn'] - dap_catalog['X1']) / (dap_catalog['ncols'] - 1)
+        # resy = (dap_catalog['Yn'] - dap_catalog['Y1']) / (dap_catalog['nrows'] - 1)
+
+        # resy = "POINT" if resy.values[0] == "NA" else  resy.tolist()[0]
+
+        # resy = "POINT" if resy.values[0] == "NA" else resy.values[0]
+
+
+        if all(dap_catalog['nrows'] == 1) and all(dap_catalog['ncols'] == 1):
+
+            # X coords
+            xmin = dap_catalog['X1'].values[0]
+            xmax = dap_catalog['X1'].values[0]
+
+            # Y coords
+            ymin = dap_catalog['Y1'].values[0]
+            ymax = dap_catalog['Y1'].values[0]
+
+            # nrow and ncol
+            ncol = 1
+            nrow = 1
+
+        else:
+            # X coords
+            xmin = min(dap_catalog['X1'] - 0.5 * resx)
+            xmax = max(dap_catalog['Xn'] + 0.5 * resx)
+            
+            # Y coords
+            ymin = min(dap_catalog['Y1'] - 0.5 * resy)
+            ymax = max(dap_catalog['Yn'] + 0.5 * resy)
+
+            # nrow and ncol
+            ncol = round((xmax - xmin)/(list(set([resy]))[0]), 2)
+            nrow = round((ymax - ymin)/(list(set([resx]))[0]), 2)
+
+        # list of bounding box coordinates
+        ext_lst = [xmin, xmax, ymin, ymax]
+
+        # extent string
+        ext = ", ".join([str(round(i, 2)) for i in ext_lst]) + " (xmin, xmax, ymin, ymax)"
+
+        # min and max dates in dap_catalog
+        minDate = min((dap_catalog['startDate']))
+        maxDate = max((dap_catalog['endDate']))
+
+        # freq = utils.match_long_time_units(dap_catalog['interval'].values[0].split(" ")[1])
+        # len(pd.date_range(minDate, maxDate, freq = freq))
+
+        # calculate time dimensions length based on interval
+        if dap_catalog['interval'].values[0] not in [0, "0"]:
+            freq = utils.match_long_time_units(
+                dap_catalog['interval'].values[0].split(" ")[1]
+                )
+            tDim = len(pd.date_range(minDate, maxDate, freq = freq))
+        else:
+            tDim = 1
+
+        # replace NA descriptions with "-"
+        dap_catalog["description"] = dap_catalog["description"].replace("NA", "-")
+
+        # make variable names string
+        var = [f"{row['varname']} [{row['units']}] ({row['description']})" for index, row in dap_catalog.iterrows()]
+        var_str = "".join(["\n > " + v for v in var])
+        # var = "\n".join(var)
+
+        # var = '[' + dap_catalog['varname'].values + ']' + ' (' + dap_catalog['units'].values + ')' + ' (' + dap_catalog['description'].values + ')'
+        # var = (f"{dap_catalog['varname'].values} " \
+        #                 f"[{dap_catalog['units'].values}] " \
+        #                 f"({dap_catalog['description'].values})"
+        #                 )
+
+        # make CRS string
+        crs_str = dap_catalog['crs'].values[0]
+
+        # if url_str is greater than 60 characters, trim it and add "..."
+        crs_str = f"{crs_str[0:50]}..." if len(crs_str) > 50 else crs_str
+
+        # extract the URL string
+        url_str = dap_catalog["URL"].values[0].split("\\?")[0]
+
+        # if url_str is greater than 60 characters, trim it and add "..."
+        url_str = f"{url_str[0:60]}..." if len(url_str) > 60 else url_str
+
+        # print out summary information for DAP resource
+        print(f"source:\t{url_str}")
+        if dap_catalog["varname"].value_counts().max() > 1:
+            print(f"tiles:\t{dap_catalog['varname'].value_counts().max()} {dap_catalog['tiled'].unique()[0]} tiles")
+        print("varname(s):", var_str)
+        print("=" * 50)
+        print(
+            f"dimensions: {ncol}, {nrow}, {tDim} "
+            f"(names: "
+            f"{dap_catalog['X_name'][0]}, "
+            f"{dap_catalog['Y_name'][0]}, " 
+            f"{dap_catalog['T_name'][0]})"
+            )
+        print(
+            f"resolution: "
+            f"{round(dap_catalog['resX'][0], 3)}, " 
+            f"{round(dap_catalog['resY'][0], 3)}, "
+            f"{dap_catalog['interval'][0]} "
+            )
+        print(f"extent:     {ext}")
+        print(f"crs:        {crs_str}")
+        print(f"time:       {minDate} to {maxDate}")
+        print("=" * 50)
+        print(f"values: " 
+            f"{len(var)} * {round(ncol)} * {round(nrow)} * {tDim} "
+            # f"{round(dap_catalog['ncols'][0])} * {round(dap_catalog['nrows'][0])} * {dap_catalog['Tdim'][0]} * {len(dap_catalog['varname'])} "
+            f"(vars*X*Y*T)"
+            )
+
+        return
+
+def vrt_summary(vrt = None, dap_catalog = None):
+
+    """Prints a summary of the VRT resource.
+
+    Args:
+        vrt (dict): A dictionary of VRT xarrays
+        dap_catalog (pd.DataFrame): pandas dataframe of the catalog entries for the VRTs
+    
+    Returns:
+        None
+    """
+
+    # if 'vrt' is not of type 'dict', raise a TypeError
+    if not isinstance(vrt, (dict)):
+        raise TypeError(f"'vrt' must be of type 'dict' and is {type(vrt)}")
+
+    # if dap_catalog is not a pandas DataFrame, raise a TypeError
+    if not isinstance(dap_catalog, (pd.core.frame.DataFrame)):
+        raise TypeError(f"'dap_catalog' must be of type 'pd.core.frame.DataFrame' and is {type(dap_catalog)}")
+    
+    # if 'vrt' is missing (None), raise exception
+    if vrt is None:
+        raise Exception(f"Missing 'vrt' argument")
+    
+    # if 'dap_catalog' is missing (None), raise exception
+    if dap_catalog is None:
+        raise Exception(f"Missing 'dap_catalog' argument")
+    
+    # loop through all of the keys in the 'vrt' hashmap and create a summary print out for each VRT in the hashmap
+    for key in vrt:
+        # print(f"----> KEY: {key}")
+
+        # get value from vrt hashmap
+        xvrt = vrt[key]
+        # xvrt = vrt['tmin']
+
+        # # list of variables
+        # vars = list(vrt.keys())
+
+        # list of VRT dimension names in sorted (alphabetical) order
+        vrt_dims = sorted(xvrt.dims)
+
+        # create a hashmap to store dimension values
+        dim_map = {}
+
+        # loop through the dimensions of the vrt and extract min/max dimension values
+        for i in vrt_dims:
+            # print(f"{i}min")
+            # print(f"{i}max")
+
+            # make minimum and maximum dimension strings
+            min_dim = f"{i}min"
+            max_dim = f"{i}max"
+
+            # map minimum and maximum and dimension values to dimension strings ("min_dim", "max_dim")
+            dim_map[min_dim] = round(xvrt[i].values.min(), 2)
+            dim_map[max_dim] = round(xvrt[i].values.max(), 2)
+
+        # list of bounding box coordinates
+        ext_lst = list(dim_map.values())
+
+        # extent string
+        ext = (
+            f"{', '.join([str(round(i, 2)) for i in ext_lst])}"
+            f" ({', '.join(list(dim_map.keys()))})"
+            )
+        # ext = ", ".join([str(round(i, 2)) for i in ext_lst]) + " (xmin, xmax, ymin, ymax)"
+        # xvrt[vrt_dims[0]]
+
+        resx = "POINT" if all(dap_catalog['resX'] == "NA") else dap_catalog['resX'].tolist()[0]
+        resy = "POINT" if all(dap_catalog['resY'] == "NA") else dap_catalog['resY'].tolist()[0]
+        # resx = (dap_catalog['Xn'] - dap_catalog['X1']) / (dap_catalog['ncols'] - 1)
+        # resy = (dap_catalog['Yn'] - dap_catalog['Y1']) / (dap_catalog['nrows'] - 1)
+
+        # if all of the nrows and ncols in the dap catalog equal 1, set ncol and nrow equal to 1
+        if all(dap_catalog['nrows'] == 1) and all(dap_catalog['ncols'] == 1):
+
+            # nrow and ncol
+            ncol = 1
+            nrow = 1
+
+        # otherwise use the dimension names in 'vrt_dims' and check the lengths of the dimensions
+        else:
+
+            # nrow and ncol
+            ncol = len(xvrt[vrt_dims[0]])
+            nrow = len(xvrt[vrt_dims[1]])
+            # ncol = round((xmax - xmin)/(list(set([resy]))[0]), 2)
+            # nrow = round((ymax - ymin)/(list(set([resx]))[0]), 2)
+
+
+        # replace NA descriptions with "-"
+        dap_catalog["description"] = dap_catalog["description"].replace("NA", "-")
+        # dap_catalog["units"]
+
+        # make variable names string
+        var = [f"{row['varname']} [{row['units']}] ({row['description']})" for index, row in dap_catalog.iterrows()]
+        var_str = "".join(["\n > " + v for v in var])
+
+        # interval string
+        interval = str(dap_catalog["interval"].values[0])
+
+        # make CRS string
+        crs_str = dap_catalog['crs'].values[0]
+
+        # if url_str is greater than 60 characters, trim it and add "..."
+        crs_str = f"{crs_str[0:50]}..." if len(crs_str) > 50 else crs_str
+
+        # extract the URL string
+        url_str = dap_catalog["URL"].values[0].split("\\?")[0]
+
+        # if url_str is greater than 60 characters, trim it and add "..."
+        url_str = f"{url_str[0:60]}..." if len(url_str) > 60 else url_str
+        
+        # min and max dates in dap_catalog
+        minDate = min((dap_catalog['startDate'])) if "startDate" in dap_catalog else "NA"
+        maxDate = max((dap_catalog['endDate'])) if "endDate" in dap_catalog else "NA"
+
+        # if both minDate and maxDate are missing ("NA") make 'date_str' equal "NA",
+        # otherwise make a date string as "minDate to maxDate"
+        date_str = f"{minDate} - {maxDate}" if minDate != "NA" and maxDate != "NA" else "NA"
+
+        # print out summary information for DAP resource
+        print(f"source:\t{url_str}")
+        if dap_catalog["varname"].value_counts().max() > 1:
+            print(f"tiles:\t{dap_catalog['varname'].value_counts().max()} {dap_catalog['tiled'].unique()[0]} tiles")
+        print("varname(s):", var_str)
+        print("=" * 50)
+        print(
+            f"dimensions: {ncol}, {nrow} "
+            f"(names: {', '.join(vrt_dims)})"
+            )
+        print(
+            f"resolution: "
+            f"{round(resx, 3)}, " 
+            f"{round(resy, 3)}, "
+            f"{interval} "
+            )
+        print(f"extent:     {ext}")
+        print(f"crs:        {crs_str}")
+        print(f"time:       {date_str}")
+        print("=" * 50)
+        print(f"values: " 
+            f"{len(var)}*{'*'.join([str(len(xvrt[i])) for i in vrt_dims])}"
+            # f"{round(dap_catalog['ncols'][0])} * {round(dap_catalog['nrows'][0])} * {dap_catalog['Tdim'][0]} * {len(dap_catalog['varname'])} "
+            f" (vars*{'*'.join([str(i).upper() for i in vrt_dims])})"
+            )
+        
+    return
 
 # def parse_date2(duration, nT):
     # duration = catalog["duration"].iloc[i]

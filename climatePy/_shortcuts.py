@@ -40,7 +40,7 @@ def getTerraClim(
         startDate = None, 
         endDate   = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Terra Climate Normals for an Area of Interest
@@ -95,7 +95,7 @@ def getTerraClimNormals(
         month     = [i for i in range(1, 13)],
         scenario  = '19812010', 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Terra Climate Normals for an Area of Interest
@@ -168,7 +168,7 @@ def getGridMET(
         startDate = None, 
         endDate   = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get GridMet Climate Data for an Area of Interest
@@ -220,7 +220,7 @@ def getGLDAS(
         endDate   = None, 
         model     = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get GLDAS Data for an Area of Interest
@@ -280,7 +280,7 @@ def getMODIS(
         endDate   = None, 
         model     = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get MODIS Data for an Area of Interest
@@ -338,7 +338,7 @@ def getDaymet(
         startDate = None, 
         endDate   = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Daymet Climate Data for an Area of Interest
@@ -396,7 +396,7 @@ def getBCCA(
         scenario  = 'rcp45', 
         ensemble  = None,  
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get BCCA data for an Area of Interest
@@ -450,7 +450,7 @@ def getPRISM(
         endDate   = None, 
         timeRes   = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get PRISM data for an Area of Interest
@@ -525,7 +525,7 @@ def getLivneh(
         endDate   = None, 
         timeRes   = "daily",
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Livneh Climate Data for an Area of Interest
@@ -585,7 +585,7 @@ def getLivneh_fluxes(
         startDate = None, 
         endDate   = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Livneh Fluxes Climate Data for an Area of Interest
@@ -635,7 +635,7 @@ def getVIC(
         model     = 'ccsm4', 
         scenario  = 'rcp45',
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get VIC Climate Data for an Area of Interest
@@ -686,7 +686,7 @@ def getNLDAS(
         endDate   = None, 
         model     = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get NLDAS Climate Data for an Area of Interest
@@ -747,7 +747,7 @@ def getMACA(
         model     = 'CCSM4', 
         scenario  = 'rcp45', 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get MACA Climate Data for an Area of Interest
@@ -810,7 +810,7 @@ def getCHIRPS(
         endDate   = None, 
         timeRes   = "monthly",
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get CHIRPS data for an Area of Interest
@@ -875,7 +875,7 @@ def getLOCA(
         model     = 'CCSM4',
         scenario  = 'rcp45',
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get LOCA Climate Data for an Area of Interest
@@ -931,7 +931,7 @@ def getPolaris(
         AOI       = None,
         varname   = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get Polaris Climate Data for an Area of Interest
@@ -974,7 +974,7 @@ def getWorldClim(
         date 	  = None,
         res       = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get WorldClim data for an Area of Interest
@@ -1025,7 +1025,7 @@ def getISRIC_soils(
         AOI       = None,
         varname   = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get ISRIC Soil Grids data for an Area of Interest
@@ -1065,7 +1065,7 @@ def get3DEP(
         AOI       = None,
         res       = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get USGS Digatal Elevation Model (DEM) data for an Area of Interest
@@ -1112,7 +1112,7 @@ def get3DEP(
 def getNASADEM(
         AOI       = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get NASA Digatal Elevation Model (DEM) data for an Area of Interest
@@ -1154,7 +1154,7 @@ def AquaGoesSSTAnom(
         endDate   = None,
         units     = None,
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get SST anomolies from AquaGoesSSTAnomC data for an Area of Interest
@@ -1208,7 +1208,7 @@ def getLCMAP(
         startDate = None, 
         endDate   = None, 
         dopar     = True,
-        verbose   = False
+        verbose   = True
         ):
     
     """Get LCMAP data for an Area of Interest

@@ -582,13 +582,20 @@ def match_long_time_units(key):
         long_map = {
             "hour": "H",
             "hours": "H",
+            "hourly": "H",
             "day": "D",
             "days": "D",
+            "daily": "D",
             "minutes": "min",
             "seconds": "S",
             "month": "M",
             "months": "MS",
-            "years": "Y"
+            "monthly": "MS",
+            "years": "Y",
+            "yearly": "Y",
+            "annual": "Y",
+            "annualy": "Y",
+            "annually": "Y"
             }
         
         if key in long_map.keys():
@@ -668,6 +675,7 @@ def has_hms(timesteps):
 
 def convert_to_days(time_interval):
     # time_interval = "720 minutes"
+    
     # Define conversion factors
     conversion_factors = {
         "second": 1 / 86400,
@@ -678,6 +686,10 @@ def convert_to_days(time_interval):
         "hours": 1 / 24,
         "day": 1,
         "days": 1,
+        "week": 7,       
+        "weeks": 7,    
+        "pentad": 5,      
+        "pentads": 5, 
         "month": 30,
         "months": 30,
         "year": 365,
@@ -780,14 +792,11 @@ def validate_time_interval(time_interval):
     convert it to a common interval. For example, "86400 seconds" will become "1 day".
 
     Args:
-        time_interval (str): time interval string in the format <time_value> <time_unit>
+        time_interval (str): time interval string in the format "<time_value> <time_unit>" (e.g. "86400 seconds", "1 day", "1 month")
 
     Returns:
-        str: corrected time interval string in the format <time_value> <time_unit>
+        str: corrected time interval string in the format "<time_value> <time_unit>" 
     """
-
-    # time_interval = most_freq
-    # verbose = True
 
     # extract the time interval integer value and unit string
     time_val = int(time_interval.split(" ")[0])
@@ -815,9 +824,6 @@ def validate_time_interval(time_interval):
     #         if verbose: 
     #             print(f"Converting {time_val} days to {day_convert}")
     #         time_interval = day_convert
-
-    # if verbose:
-    #     print(f"Most common time interval: {time_interval}")
 
     # return the full string if only_units is False
     return time_interval
