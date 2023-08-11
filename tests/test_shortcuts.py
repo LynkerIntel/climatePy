@@ -31,6 +31,7 @@ from datetime import datetime
 #                         'boulder_county', 'king_county'])
 
 @pytest.fixture(params=['san_luis_obispo_county', 'boulder_county'])
+# @pytest.fixture(params=['san_luis_obispo_county'])
 
 def AOI(request): 
     # filepath = f'src/data/{request.param}.gpkg'
@@ -1104,3 +1105,155 @@ def test_getISRIC_soils_case3(AOI):
 
     # assert output['Vertisols'].shape == (432, 945)
     # assert output['Gypsisols'].shape == (432, 945)
+
+def test_getCHIRPS_case1(AOI):
+	#  ---- Case 1: Single month CHIRPS ----
+	verbose   = True
+	startDate = "2019-01-01"
+	endDate   = "2019-01-01"
+	varname       = 'precip'
+	timeRes = "daily"
+	
+	# Call function to get output
+	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+
+	# Assert that the output is a dictionary
+	assert type(output) == dict
+
+	# Assert that the output dictionary has the correct keys
+	assert set(output.keys()) == {"precip"}
+	
+	# Assert that the values of the output dictionary are xarray DataArrays
+	assert isinstance(output["precip"], xr.DataArray)
+
+	# Assert that the dimensions of the output DataArrays are correct
+	assert output["precip"].dims == ("y", "x", "time")
+
+	# Assert that the temporal resolution of the output DataArrays is correct
+	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+	# check temporal range
+	assert end_date1 - start_date1 == pd.Timedelta("0D")
+
+	assert "precip" in output["precip"].time[0].values.item()
+
+	# assert len(output["precip"].time.values) == 1
+	# assert output['precip'].shape == (19, 40, 1)
+
+def test_getCHIRPS_case2(AOI):
+	#  ---- Case 2: Multi Month CHIRPS ----
+	verbose   = True
+	startDate = "2019-01-01"
+	endDate   = "2019-03-01"
+	varname       = 'precip'
+	timeRes = "daily"
+
+	# Call function to get output
+	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+
+	# Assert that the output is a dictionary
+	assert type(output) == dict
+
+	# Assert that the output dictionary has the correct keys
+	assert set(output.keys()) == {"precip"}
+	
+	# Assert that the values of the output dictionary are xarray DataArrays
+	assert isinstance(output["precip"], xr.DataArray)
+
+	# Assert that the dimensions of the output DataArrays are correct
+	assert output["precip"].dims == ("y", "x", "time")
+
+	# Assert that the temporal resolution of the output DataArrays is correct
+	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+	# check temporal range
+	assert end_date1 - start_date1 == pd.Timedelta("59D")
+
+	assert "precip" in output["precip"].time[0].values.item()
+
+	# assert len(output["precip"].time.values) == 3
+	# assert output['precip'].shape == (19, 40, 3)
+
+
+def test_getCHIRPS_case3(AOI):
+	#  ---- Case 3: Multi Year Month CHIRPS ----
+	verbose   = True
+	startDate = "2019-01-01"
+	endDate   = "2020-02-01"
+	varname       = 'precip'
+	timeRes = "daily"
+
+	# Call function to get output
+	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+
+	# Assert that the output is a dictionary
+	assert type(output) == dict
+
+	# Assert that the output dictionary has the correct keys
+	assert set(output.keys()) == {"precip"}
+	
+	# Assert that the values of the output dictionary are xarray DataArrays
+	assert isinstance(output["precip"], xr.DataArray)
+
+	# Assert that the dimensions of the output DataArrays are correct
+	assert output["precip"].dims == ("y", "x", "time")
+
+	# Assert that the temporal resolution of the output DataArrays is correct
+	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
+					output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+	
+	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
+					output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+	# check temporal range
+	assert end_date1 - start_date1 == pd.Timedelta("396D")
+
+	assert "precip" in output["precip"].time[0].values.item()
+
+	# assert len(output["precip"].time.values) == 14
+	# assert output['precip'].shape == (19, 40, 14)
+
+def test_getCHIRPS_case4(AOI):
+	#  ---- Case 4: Monthly Multi Year CHIRPS ----
+	verbose   = True
+	startDate = "2019-01-01"
+	endDate   = "2020-02-01"
+	varname       = 'precip'
+	timeRes = "monthly"
+
+	# Call function to get output
+	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+
+	# Assert that the output is a dictionary
+	assert type(output) == dict
+
+	# Assert that the output dictionary has the correct keys
+	assert set(output.keys()) == {"precip"}
+	
+	# Assert that the values of the output dictionary are xarray DataArrays
+	assert isinstance(output["precip"], xr.DataArray)
+
+	# Assert that the dimensions of the output DataArrays are correct
+	assert output["precip"].dims == ("y", "x", "time")
+
+	# Assert that the temporal resolution of the output DataArrays is correct
+	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
+					output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+	
+	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
+					output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+	# check temporal range
+	assert end_date1 - start_date1 == pd.Timedelta("396D")
+	assert "precip" in output["precip"].time[0].values.item()
+
+	# calculate number of months
+	months = (end_date1.year - start_date1.year) * 12 + end_date1.month - start_date1.month
+	months = months + 1 if end_date1.day >= end_date1.day else months
+
+	# check that number of months in output is correct (within 1 month)
+	assert (len(output["precip"]['time']) == months or
+			len(output["precip"]['time']) + 1 == months or
+			len(output["precip"]['time']) - 1 == months)

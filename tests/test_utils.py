@@ -85,3 +85,22 @@ def test_format_date():
     date_str = '2022-03-1' # Invalid date format
     expected_output = ''
     assert climatePy.format_date(date_str) == expected_output
+
+def test_validate_time_interval():
+    assert climatePy.validate_time_interval("3600 seconds") == "1 hour"
+    assert climatePy.validate_time_interval("7200 second") == "7200 second"
+    assert climatePy.validate_time_interval("86400 seconds") == "1 day"
+    assert climatePy.validate_time_interval("720 minutes") == "720 minutes"
+
+def test_convert_to_days():
+    assert climatePy.convert_to_days("86400 seconds") == "1 days"
+    assert climatePy.convert_to_days("60 minutes") == "0 days"
+    assert climatePy.convert_to_days("720 minutes") == "0.5 days"
+    assert climatePy.convert_to_days("1440 minutes") == "1 days"
+    assert climatePy.convert_to_days("1 hour") == "0 days"
+    assert climatePy.convert_to_days("1 day") == "1 days"
+    assert climatePy.convert_to_days("1 pentad") == "5 days"
+    assert climatePy.convert_to_days("1 week") == "7 days"
+    assert climatePy.convert_to_days("1 month") == "30 days"
+    assert climatePy.convert_to_days("1 months") == "30 days"
+    assert climatePy.convert_to_days("1 year") == "365 days"
