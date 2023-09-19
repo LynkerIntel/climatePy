@@ -39,6 +39,7 @@ from ._shortcuts import getTerraClim, getTerraClimNormals, getGridMET, getMACA, 
     getVIC, getNASADEM, getWorldClim, getCHIRPS, getLCMAP, getNLDAS, getGLDAS, getMODIS
 from ._netrc_utils import writeDodsrc, writeNetrc, getNetrcPath, getDodsrcPath, checkNetrc, checkDodsrc
 from ._extract_sites import extract_sites
+from ._viz import animiation_raster
 
 __all__ = [
     'params',
@@ -68,6 +69,7 @@ __all__ = [
     'getGLDAS',
     'getMODIS',
     'extract_sites',
+    'animiation_raster',
     'writeDodsrc',
     'writeNetrc',
     'getNetrcPath',
