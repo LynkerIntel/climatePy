@@ -10,7 +10,7 @@ setuptools.setup(
     version='{{VERSION_PLACEHOLDER}}',
     author="Angus Watters, Mike Johnson",     # authors
     author_email = "anguswatters@gmail.com, mikecp11@gmail.com",
-    description="A Python package for getting point and gridded climate data by AOI",
+    description="A Python package for getting point and gridded climate data by AOI.",
     long_description=long_description,      # long description is read from the the readme file
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),    # python modules to install
