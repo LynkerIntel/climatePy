@@ -53,6 +53,8 @@ def dap_crop(
     AOI       = None, 
     startDate = None, 
     endDate   = None,
+    start     = None,
+    end       = None,
     varname   = None, 
     verbose   = True
     ):
