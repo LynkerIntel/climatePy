@@ -66,6 +66,8 @@ def dap_crop(
         AOI (geopandas.GeoDataFrame, optional): The area of interest for cropping. Defaults to None.
         startDate (str, optional): The start date of the time period. Defaults to None.
         endDate (str, optional): The end date of the time period. Defaults to None.
+        start (int, optional): Starting index of date range to of resource
+        end (int, optional): Ending index of date range to of resource
         varname (str or list, optional): The variable name(s) to filter the catalog. Defaults to None.
         verbose (bool, optional): Whether a summary of data should be printed out. Default is True and a summary is printed.
         
@@ -108,12 +110,51 @@ def dap_crop(
         catalog = catalog.fillna({'crs': catcrs[0]})
 
     # TIME
+
+    # Loop through catalog and update any ".." duration values
+    for i in range(len(catalog)):
+        if ".." in catalog['duration'].iloc[i]:
+            tmp = utils._url_to_resource_time(catalog['URL'].iloc[i], catalog['T_name'].iloc[i])
+
+            catalog["duration"].iloc[i] = tmp['duration']
+            catalog["interval"].iloc[i] = tmp['interval']
+
+    # if no start date and no end date are given
     if startDate is None and endDate is None:
-            catalog["T"]    = "[0:1:" + (catalog['nT'] - 1).astype(int).astype(str) + "]"
-            catalog["Tdim"] = catalog["nT"]
+            # catalog["T"]    = "[0:1:" + (catalog['nT'] - 1).astype(int).astype(str) + "]"
+            # catalog["Tdim"] = catalog["nT"]
             
-            tmp = [i.split("/") for i in catalog["duration"]]
-            catalog = catalog.assign(startDate = [i[0] for i in tmp], endDate = [i[1] for i in tmp])
+            # tmp = [i.split("/") for i in catalog["duration"]]
+            # catalog = catalog.assign(startDate = [i[0] for i in tmp], endDate = [i[1] for i in tmp])
+            if start is None and end is None:
+                catalog["T"]    = "[0:1:" + (catalog['nT'] - 1).astype(int).astype(str) + "]"
+                catalog["Tdim"] = catalog["nT"]
+                
+                tmp = [i.split("/") for i in catalog["duration"]]
+                catalog = catalog.assign(startDate = [i[0] for i in tmp], endDate = [i[1] for i in tmp])
+            else:
+                if end is None:
+                    end = start
+
+                # add T and T dimensions based on start/end values
+                catalog["T"] = f"[{start - 1}:1:{end - 1}]"
+                catalog["Tdim"] = max(end - start, 1)
+
+                # intialize empty startDate/endDate columns
+                catalog["startDate"] = "NA"
+                catalog["endDate"] = "NA"
+
+                # Loop over catalog rows and generate date range for each row then,
+                # create a startDate/endDate columns
+                # with the values being the date value found at the start/end index values in the range of dates created in each loop
+                for i in range(len(catalog)):
+                    
+                    # # take duration and interval and get a list of dates for the duration at an interval
+                    d = parse_date(duration = catalog['duration'].iloc[i], interval = catalog['interval'].iloc[i])
+
+                    # Insert startDate and endDate based on start/end indices indexing the 'd' range of dates above
+                    catalog["startDate"].iloc[i] = d[start].strftime('%Y-%m-%d')
+                    catalog["endDate"].iloc[i]   = d[end].strftime('%Y-%m-%d')
     else:
         if endDate is None:
             endDate = startDate
@@ -136,7 +177,6 @@ def dap_crop(
         
         # loop over each row of catalog and do date parsing
         for i in range(len(catalog)): 
-
             # if verbose:
             #     print(f'Parsing dates: {i+1}')
 
@@ -222,6 +262,10 @@ def dap_crop(
                 catalog = catalog.drop(drops)
                 out     = [x for x in out if x is not None]
 
+            # initialize "X" and "Y" columns to "NA" strings
+            catalog["X"] = "NA"
+            catalog["Y"] = "NA"
+
             # catalog length to track progress
             n = len(catalog)
 
@@ -238,21 +282,29 @@ def dap_crop(
                 ys = [np.argmin(np.abs(Y_coords - out[i].bounds[1])), np.argmin(np.abs(Y_coords - out[i].bounds[3]))]
                 xs = [np.argmin(np.abs(X_coords - out[i].bounds[0])), np.argmin(np.abs(X_coords - out[i].bounds[2]))]
                 
-                catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
-                catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+                # Create DAP X/Y coord ranges
+                catalog["Y"].iloc[i] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                catalog["X"].iloc[i] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+                
+                # catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                # catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
 
-                catalog.at[i, 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                catalog.at[i, 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
-                catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # Update "X1", "Xn", "Y1", "Yn" columns based on XY coord sequences
+                catalog["X1"].iloc[i] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog["Xn"].iloc[i] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog["Y1"].iloc[i] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                catalog["Yn"].iloc[i] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
 
-                # catalog.at[i, 'X1'] = min(X_coords[[i + 1 for i in xs]])
-                # catalog.at[i, 'Xn'] = max(X_coords[[i + 1 for i in xs]])
-                # catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 for i in ys]])
-                # catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 for i in ys]])
+                # catalog.at[i, 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog.at[i, 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
 
-                catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
-                catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
+                # Calculate number ROWS and COLUMNS
+                catalog["ncols"].iloc[i] = abs(np.diff(xs))[0] + 1
+                catalog["nrows"].iloc[i] = abs(np.diff(ys))[0] + 1
+                # catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
+                # catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
     
     # DIMENSION ORDER STRINGS
     first  = catalog['dim_order'].str[0].fillna('T').values[0]
