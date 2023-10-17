@@ -58,7 +58,7 @@ def animiation_raster(data, outfile, colors = None):
         (str or List[str]): A single string indicating where filepath the GIF was
         saved to or a List of output file paths indicating where the GIF for each one of the dictionary keys was saved to
     """
-        
+    
     # if data is a DataArray, make the gif and return the file path name
     if isinstance(data, (xr.core.dataarray.DataArray, xr.core.dataarray.DataArray)):
         animiation_xarray(data = data, outfile = outfile, colors = colors)
