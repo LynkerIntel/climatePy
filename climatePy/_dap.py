@@ -446,6 +446,8 @@ def dap(
                 AOI       = AOI,
                 startDate = startDate,
                 endDate   = endDate,
+                start     = start,
+                end       = end,
                 varname   = varname,
                 verbose   = verbose
                 )
