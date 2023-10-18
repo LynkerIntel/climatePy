@@ -959,6 +959,155 @@ def _resource_time(
 
     return time_dict
 
+# TODO: this is duplicate code with the function above, just useful for taking in a URL string INSTEAD of the actual xarray NetCDF object in _resource_time()
+def _url_to_resource_time(
+        URL    = None,
+        T_name = None
+        ):
+    
+    """Get time information from a xarray netcdf file URL
+    
+    Args:
+        URL (str): url of the netcdf file to extract time informations from
+        T_name (str, optional): name of the time variable. Defaults to None.
+    
+    Returns:
+        dict: dictionary of time information with duration, interval, and nT keys
+    """
+
+    # nc     = ds
+    # T_name = raw["T_name"][0]
+
+    with xr.open_dataset(URL, decode_times=False, decode_cf = True, decode_coords = True) as nc:
+        
+        # Time variable info
+        T_var_info = nc[T_name]
+        
+        # time variable units
+        T_units    = T_var_info.attrs["units"].split(" ")[0]
+
+        # time variable values
+        time_steps = xr.decode_cf(nc)[T_name].values
+
+        # check if time steps are isoformatted
+        # if isinstance(time_steps[0], cftime._cftime.DatetimeNoLeap):
+        if not isinstance(time_steps[0], (datetime, np.datetime64)):
+            vec_isoformat = np.vectorize(lambda x: datetime.fromisoformat(x.isoformat()))
+
+            # apply the vectorized function to the dates array to get an array of isoformatted date strings
+            time_steps = vec_isoformat(time_steps)
+
+        # # determine the max date of the time steps
+        # # If time is within 5 days of today then we call the range open
+        # maxDate = np.where((time_steps.max() >=  np.datetime64(datetime.now() - timedelta(days=5)) and 
+        #                     time_steps.max() <=  np.datetime64(datetime.now() + timedelta(days=1))),
+        #                     "..",
+        #                     str(time_steps.max())
+        #                     ).item()
+        
+        # # get length of the timesteps or if open, a None value
+        # if maxDate == "..":
+        #     nT = None
+        # else:
+        #     nT = len(time_steps)
+
+        # get the time intervals between each datetime in the time_steps array
+        dT = get_time_intervals(time_steps)
+
+        # Check that there is more than one time step (dT NOT equal to 0):
+        # Conditions breakdown:
+            # IF dT IS 0 (first 'if' condition), then the time interval is 0 (i.e. a dataset that has a single timestamp), 
+            # thus we will set the 'interval' variable to 0 and proceed on
+            # OTHERWISE (the else condition), if dT is NOT 0, then we will get the time interval info 
+            # for the timestamps/dataset (most common interval, verify correct units, check if monthly data, etc.)
+
+        # Case when there is only a single timestamp in the dataset
+        if not dT:
+            # if interval length is 0, set interval to 0
+            interval = "0"
+
+            print("No time intervals found")
+
+        # Case when there are multiple timestamps in the dataset (typical case)
+        else: 
+            print(f"Found {len(dT)} time intervals")
+
+            # get the number of time intervals
+            interval_count = count_time_intervals(dT)
+
+            # get the interval values
+            interval_vals = [int(i.split(' ')[0]) for i in list(interval_count.keys())]
+
+            # get the interval units
+            interval_units = [i.split(' ')[-1] for i in list(interval_count.keys())]
+
+            # get the most common interval value
+            most_freq = interval_count.most_common(1)[0][0]
+
+            # correct seconds to days if necessary
+            most_freq = validate_time_interval(most_freq)
+
+            # get the most common interval unit
+            good_units = most_freq.split(' ')[-1]
+
+            # switch T_units with good_units IF T_units does NOT equal the most common interval unit (good_units), set T_units to the most common interval unit
+            if T_units != good_units:
+                T_units = good_units
+
+            # (np.datetime64(int(most_freq.split(' ')[0]), "D")).astype('datetime64[s]').astype(int)/86400
+            # (np.datetime64(most_freq.split(' ')[0]).astype('datetime64[s]').astype(int)/86400).astype(int).tolist()
+            # (time_steps[0].astype('datetime64[s]').astype(int)/86400).astype(int).tolist()
+
+            # # value in days
+            # day_vals = (g["value"].values.astype('timedelta64[s]').astype(int)/86400).astype(int).tolist()
+            
+            # if the time interval is a month, make a dictionary with 1 month time intervals, 
+            #   otherwise, use most common interval and corrected units
+            if len(interval_vals) > 1 and all(i in [28, 29, 30, 31] for i in interval_vals):
+                time_dict = {
+                    "value": 1,
+                    "interval": "months"
+                    }
+            else:
+                # get the most common interval
+                time_dict = {
+                    "value": int(most_freq.split(' ')[0]),
+                    "interval": good_units
+                    }
+                
+            # create a string of the interval
+            interval = str(time_dict["value"]) + " " + time_dict["interval"]
+
+            # format the interval string
+            interval = format_units(interval, T_units)
+        
+        # determine the max date of the time steps
+        # If time is within 5 days of today then we call the range open
+        maxDate = np.where((time_steps.max() >=  np.datetime64(datetime.now() - timedelta(days=5)) and 
+                            time_steps.max() <=  np.datetime64(datetime.now() + timedelta(days=1))),
+                            "..",
+                            str(time_steps.max())
+                            ).item()
+        
+        # get length of the timesteps or if open, a None value
+        if maxDate == "..":
+            nT = None
+        else:
+            nT = len(time_steps)
+
+        # format_date(str(time_steps.min())) + "/" + (".." if maxDate == ".." else format_date(str(maxDate)))
+            
+        # create a dictionary of the time attributes
+        time_dict = {
+            "duration" : format_date(str(time_steps.min())) + "/" + (".." if maxDate == ".." else format_date(str(maxDate))),
+            "interval" : interval,
+            "nT"       : nT
+            }
+        
+        # nc.close()
+        
+    return time_dict
+
 # def _resource_time(
 #         nc     = None,
 #         T_name = None

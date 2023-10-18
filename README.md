@@ -46,9 +46,10 @@ climatePy simplifies the steps needed to get climate data into Python. At its co
 
 `climatePy` can be downloaded from PyPI via `pip` like so:
 
-``` 
+```
 pip install climatePy
 ```
+
 **Note:** climatePy is still in **development**
 
 <br>
@@ -68,6 +69,7 @@ catalog = climatePy.params()
 # load example AOI data
 AOI = gpd.read_file('src/data/san_luis_obispo_county.gpkg')
 ```
+
 <br>
 
 ### Using `climatepy_filter()`:
@@ -79,17 +81,18 @@ Here we filter down our climate catalog to TerraClim precipitation data for San 
 ```python
 # collect raw meta data
 raw = climatePy.climatepy_filter(
-        id        = "terraclim", 
-        AOI       = AOI, 
+        id        = "terraclim",
+        AOI       = AOI,
         varname   = "ppt"
         )
 ```
 
-| id  | asset | varname    |
-|-------|-----|---------|
-| gridmet | agg_terraclimate_ppt_1958_CurrentYear_GLOBE  | ppt   |
+| id      | asset                                       | varname |
+| ------- | ------------------------------------------- | ------- |
+| gridmet | agg_terraclimate_ppt_1958_CurrentYear_GLOBE | ppt     |
 
 ### AOI
+
 ![San Luis Obispo County county](assets/images/san_luis_obispo_county_polygon.png)
 
 <br>
@@ -107,6 +110,7 @@ prcp = climatePy.getTerraClim(
     endDate   = "2018-01-01"
     )
 ```
+
 ![Precipitation San Luis Obispo County](assets/images/san_luis_obispo_county_ppt.png)
 
 <br>
@@ -125,6 +129,7 @@ prcp = climatePy.getTerraClim(
     endDate   = "2018-12-01"
     )
 ```
+
 ![2018 precipitation in San Luis Obispo County, CA](assets/images/slo_prcp_facet_plots.png)
 
 <br>
@@ -141,11 +146,12 @@ bbox = box(-112, 34, -105, 39)
 bbox = gpd.GeoDataFrame(geometry=[bbox], crs ='EPSG:4326')
 
 vs = climatePy.getGridMET(
-       AOI       = bbox, 
+       AOI       = bbox,
        varname   = "vs",
        startDate = "2018-09-01"
        )
 ```
+
 ![Daily Wind Velocity Four Corners, USA](assets/images/four_corners_gridmet.png)
 
 <br>
@@ -154,6 +160,8 @@ vs = climatePy.getGridMET(
 ## Credits
 
 Credit to [Mike J Johnson](https://github.com/mikejohnson51) and the other contributors to the original [`climateR`](https://github.com/mikejohnson51/climateR) package listed below:
+
+- [Justin Singh](https://github.com/program--)
 - [Max Joseph](https://github.com/mbjoseph)
 - [Eric R. Scott](https://github.com/Aariq)
 - [James Tsakalos](https://github.com/jamestsakalos)
@@ -162,24 +170,29 @@ Credit to [Mike J Johnson](https://github.com/mikejohnson51) and the other contr
 
 ## License
 
-MIT License
+GNU General Public License v3.0
 
-Copyright (c) 2023 Angus Watters, Mike J. Johnson
+climatePy: Find, subset and retrieve climate and geospatial data by AOI in Python.
+Copyright (C) 2023 Angus Watters, Mike J. Johnson
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
 
 <br>
 
 ## How to Contribute
+
 If you would like to contribute, submit a PR and we will get to as soon as we can!
 If you have any issues please open an issue on GitHub. For any questions, feel free to ask [@anguswg-ucsb](https://github.com/anguswg-ucsb) or [@mikejohnson51](https://github.com/mikejohnson51), or simply create an issue on GitHub.

@@ -40,8 +40,8 @@ def animiation_xarray(data, outfile, color):
     return outfile
 
 def animiation_raster(data, outfile, colors = None):
-        
-        """Create animation GIFs from a dictionary of xarray DataArrays or a single xarray DataArray.
+    
+    """Create animation GIFs from a dictionary of xarray DataArrays or a single xarray DataArray.
 
     Parameters:
         data (xarray.core.dataarray.DataArray, dict): The xarray DataArray(s) to create the animations from.
@@ -58,12 +58,11 @@ def animiation_raster(data, outfile, colors = None):
         (str or List[str]): A single string indicating where filepath the GIF was
         saved to or a List of output file paths indicating where the GIF for each one of the dictionary keys was saved to
     """
-        
+    
     # if data is a DataArray, make the gif and return the file path name
-    if isinstance(data, [xarray.core.dataarray.DataArray, xr.core.dataarray.DataArray]):
-
+    if isinstance(data, (xr.core.dataarray.DataArray, xr.core.dataarray.DataArray)):
         animiation_xarray(data = data, outfile = outfile, colors = colors)
-
+        
         return outfile
     
     # if outfile is a string

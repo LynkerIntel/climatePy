@@ -11,25 +11,13 @@ import warnings
 warnings.filterwarnings('ignore', category=Warning)
 
 def params():
-    # data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.csv')
-    # data_file = pkg_resources.resource_filename('src', 'data/catalog.csv')
-    # data = pd.read_csv(data_file, low_memory=False)
-
+    
     data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
     data = pd.read_parquet(data_file)
+    # data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.csv')
+    # data = pd.read_csv(data_file, low_memory=False)
 
     return data
-
-# # try and get up to date catalog from GitHub, otherwise use local catalog file
-# def params():
-#     url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
-#     cat = None
-#     try:
-#         cat = pd.read_parquet(url)
-#     except Exception:
-#         url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
-#         cat = pd.read_parquet(url)
-#     return cat
 
 from ._climatepy_filter import climatepy_filter
 from ._dap import dap, dap_crop, dap_get
@@ -78,6 +66,20 @@ __all__ = [
     'checkDodsrc'
 ]
 
+##############################
+
+# # # try and get up to date catalog from GitHub, otherwise use local catalog file
+# def params():
+#     url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
+#     cat = None
+#     try:
+#         cat = pd.read_parquet(url)
+#     except Exception:
+#         url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
+#         cat = pd.read_parquet(url)
+#     return cat
+
+##############################
 ##############################
 # # Old method
 # import pandas as pd
