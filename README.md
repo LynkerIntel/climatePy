@@ -173,7 +173,7 @@ Credit to [Mike J Johnson](https://github.com/mikejohnson51) and the other contr
 GNU General Public License v3.0
 
 climatePy: Find, subset and retrieve climate and geospatial data by AOI in Python.
-Copyright (C) 2023 Angus Watters, Mike J. Johnson
+Copyright (C) 2023 Angus Watters, J. Michael Johnson
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
