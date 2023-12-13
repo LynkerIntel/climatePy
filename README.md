@@ -1,4 +1,4 @@
-# [**climatePy**](https://github.com/anguswg-ucsb/climatePy)
+# [**climatePy**](https://github.com/LynkerIntel/climatePy)
 
 <!-- badges: start -->
 
@@ -159,7 +159,7 @@ vs = climatePy.getGridMET(
 
 ## Credits
 
-Credit to [Mike J Johnson](https://github.com/mikejohnson51) and the other contributors to the original [`climateR`](https://github.com/mikejohnson51/climateR) package listed below:
+Credit to [Mike Johnson](https://github.com/mikejohnson51) and the other contributors to the original [`climateR`](https://github.com/mikejohnson51/climateR) package listed below:
 
 - [Justin Singh](https://github.com/program--)
 - [Max Joseph](https://github.com/mbjoseph)
