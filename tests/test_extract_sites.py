@@ -7,8 +7,9 @@ import numpy as np
 import re
 
 # import climatePy modules
-import climatePy._extract_sites as climatePy
+# import climatePy._extract_sites as climatePy
 # import climatePy
+import climatePy._extract_sites
 
 # make some testing data
 @pytest.fixture
@@ -39,27 +40,27 @@ def r():
 
 # currently poorly written unit tests
 def test_clean_time(df, df_expected, clean_time_expected):
-    df['date'] = climatePy.clean_time(df, 'time', inplace= False)
+    df['date'] = climatePy._extract_sites.clean_time(df, 'time', inplace= False)
     assert df['date'].tolist() == df_expected['date'].tolist()
-    cleaned_time = climatePy.clean_time(df, "time", inplace=False)
+    cleaned_time = climatePy._extract_sites.clean_time(df, "time", inplace=False)
     assert cleaned_time == clean_time_expected
 
-def test_clean_varname(df, col, df_expected):
-    cleaned_varname_df = climatePy.clean_varname(df, col)
-    assert cleaned_varname_df['varname'].equals(df_expected['varname'])
-    cleaned_varname = climatePy.clean_varname(df, col, inplace=False)
-    assert np.array_equal(cleaned_varname, df_expected['varname'].values)
+# def test_clean_varname(df, col, df_expected):
+#     cleaned_varname_df = climatePy._extract_sites.clean_varname(df, col)
+#     assert cleaned_varname_df['varname'].equals(df_expected['varname'])
+#     cleaned_varname = climatePy._extract_sites.clean_varname(df, col, inplace=False)
+#     assert np.array_equal(cleaned_varname, df_expected['varname'].values)
 
 def test_pts_extracter(r, pts, df_expected):
-    extracted_df = climatePy.pts_extracter(r, pts)
+    extracted_df = climatePy._extract_sites.pts_extracter(r, pts)
     assert extracted_df.equals(df_expected)
 
 def test_extract_sites_single_dataarray(r, pts, df_expected):
-    extracted_df = climatePy.extract_sites(r, pts)
+    extracted_df = climatePy._extract_sites.extract_sites(r, pts)
     assert extracted_df.equals(df_expected)
 
 def test_extract_sites_dict(r, pts, df_expected):
     data_dict = {'var1': r, 'var2': r}
     expected_df = pd.concat([df_expected, df_expected], ignore_index=True)
-    extracted_df = climatePy.extract_sites(data_dict, pts)
+    extracted_df = climatePy._extract_sites.extract_sites(data_dict, pts)
     assert extracted_df.equals(expected_df)

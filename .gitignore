@@ -26,3 +26,22 @@ env/
 *.log         #  log files
 
 extras/
+
+# ignore anything with a ".gpkg" extension
+*.gpkg
+
+# ignore anything with a ".gpkg" extensions in the 'climatePy/data' directory
+climatePy/data/*.gpkg
+
+**/.DS_Store
+
+# ignore dodsrc files
+*.dodsrc
+
+# ignore user cookies
+.netrc
+.dodsrc
+.urs_cookies
+.env
+
+scrap.py
