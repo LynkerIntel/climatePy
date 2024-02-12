@@ -117,16 +117,6 @@ def test_climatepy_filter(AOI):
                         model=["CSIRO-Mk3-6-0"], ensemble="XXXX",
                         scenario=['rcp45', 'rcp85'], startDate="2079-10-01")
 
-# Assuming climatepy_filter is your function
-# For demonstration purposes, let's create a dummy version of the function
-
-# def climatepy_filter(id, varname, model=None, scenario=None, ensemble=None, startDate=None):
-#     # Dummy implementation
-#     if model is None or scenario is None:
-#         return None
-#     else:
-#         return pd.DataFrame({'id': [id], 'varname': [varname], 'model': [model], 'scenario': [scenario], 'ensemble': [ensemble], 'startDate': [startDate]})
-
 def test_ensemble():
     # NULL
     x = climatePy._climatepy_filter.climatepy_filter(id="loca", varname="tasmin", model='GISS-E2-R', scenario='rcp45', startDate="2050-01-01")

@@ -166,60 +166,6 @@ def climatepy_filter(
     # # scenario = ['rcp45', 'rcp85']
     # startDate = "2000-01-01"
     # endDate    = None
-
-    ############ version 3 ############
-    # id="bcca"
-    # asset      = None
-    # varname=['pr', 'tasmax', 'tasmin']
-    # ensemble='r1i1p1'
-    # model=["CSIRO-Mk3-6-0"]
-    # scenario=['rcp45', 'rcp85']
-    # startDate="2079-10-01"
-    # endDate    = None
-    ############ version 4 ############
-    # id="loca"
-    # varname="tasmin"
-    # model='GISS-E2-R'
-    # scenario='rcp45'
-    # startDate="2050-01-01"
-    # ensemble = None
-    # endDate    = None
-    # asset      = None
-    # catalog = data_catalog()
-
-    ############ version 5 ############
-    # id="loca"
-    # varname="tasmin"
-    # model=['GISS-E2-R', 'ACCESS1-0']
-    # scenario='rcp45'
-    # startDate="2050-01-01"
-    # ensemble = None
-    # endDate    = None
-    # asset      = None
-    # catalog = data_catalog()
-    ############ version 6 ############
-    # id = 'cfsv2_gridmet'
-    # AOI = bb
-    # varname=None
-    # model=None
-    # scenario=None
-    # startDate=None
-    # ensemble = None
-    # endDate    = None
-    # asset      = None
-    # catalog = data_catalog()
-    # # catalog.fillna(np.nan, inplace=True)
-
-    # id = 'cfsv2_gridmet'
-    # startDate = "1900-01-01"
-    # endDate = "2022-01-01"
-    # AOI = bb
-    # varname=None
-    # model=None
-    # scenario=None
-    # asset      = None
-    # ensemble = None
-    
     ###############################################
 
     # initialize variables
