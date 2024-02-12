@@ -122,7 +122,7 @@ def getTerraClimNormals(
 
     # collect raw meta data
     raw = climatepy_filter.climatepy_filter(
-        # params    = params(), 
+        # params    = data_catalog(), 
         id        = "terraclim_normals", 
         AOI       = AOI, 
         varname   = varname, 

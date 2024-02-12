@@ -2035,7 +2035,7 @@ def vrt_crop_get(
     #     # get the ID of the URL from the catalog
     #     suffix = catalog[catalog['URL'] == key]['id'].unique()
 
-    #     # tmp = params()
+    #     # tmp = data_catalog()
     #     # suffix = tmp[tmp["id"].isna()]['id'].unique()
 
     #     # if ID column is not NA then use it as the suffix otherwise if the ID is all NA, then use the asset column as the suffix

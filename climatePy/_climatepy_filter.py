@@ -16,10 +16,10 @@ import numpy as np
 
 # # import climatePy modules
 from . import _utils as utils
-from . import params
+from . import data_catalog
 
-import climatePy._utils as utils
-from climatePy import params
+# import climatePy._utils as utils
+# from climatePy import catalog
 
 # warnings lib
 import warnings
@@ -185,7 +185,7 @@ def climatepy_filter(
     # ensemble = None
     # endDate    = None
     # asset      = None
-    # catalog = params()
+    # catalog = data_catalog()
 
     ############ version 5 ############
     # id="loca"
@@ -196,7 +196,7 @@ def climatepy_filter(
     # ensemble = None
     # endDate    = None
     # asset      = None
-    # catalog = params()
+    # catalog = data_catalog()
     ############ version 6 ############
     # id = 'cfsv2_gridmet'
     # AOI = bb
@@ -207,7 +207,7 @@ def climatepy_filter(
     # ensemble = None
     # endDate    = None
     # asset      = None
-    # catalog = params()
+    # catalog = data_catalog()
     # # catalog.fillna(np.nan, inplace=True)
 
     # id = 'cfsv2_gridmet'
@@ -227,9 +227,9 @@ def climatepy_filter(
 
     # if no ID is given, set catalog to all rows of params, otherwise filter down to ID
     if id is None:
-        catalog = params()
+        catalog = data_catalog()
     else:
-        catalog = params()
+        catalog = data_catalog()
         catalog = catalog.loc[catalog['id'] == id]
         # catalog = params.loc[params['id'] == id]
 
@@ -642,9 +642,9 @@ def climatepy_filter(
 
 #     # if no ID is given, set catalog to all rows of params, otherwise filter down to ID
 #     if id is None:
-#         catalog = params()
+#         catalog = data_catalog()
 #     else:
-#         catalog = params()
+#         catalog = data_catalog()
 #         catalog = catalog.loc[catalog['id'] == id]
 #         # catalog = params.loc[params['id'] == id]
 

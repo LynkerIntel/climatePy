@@ -10,7 +10,7 @@ import warnings
 # suppress warnings
 warnings.filterwarnings('ignore', category=Warning)
 
-def params():
+def data_catalog():
     
     data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
     data = pd.read_parquet(data_file)
@@ -30,7 +30,7 @@ from ._extract_sites import extract_sites
 from ._viz import animiation_raster
 
 __all__ = [
-    'params',
+    'data_catalog',
     'climatepy_filter',
     'dap',
     'dap_crop',
@@ -70,19 +70,19 @@ __all__ = [
 
 ##############################
 
-# # try and get up to date catalog from GitHub, otherwise use local catalog file
-def params():
-    url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
-    cat = None
-    try:
-        cat = pd.read_parquet(url)
-    except Exception:
-        url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
-        cat = pd.read_parquet(url)
-    return cat
+# # # try and get up to date catalog from GitHub, otherwise use local catalog file
+# def data_catalog():
+#     url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
+#     cat = None
+#     try:
+#         cat = pd.read_parquet(url)
+#     except Exception:
+#         url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
+#         cat = pd.read_parquet(url)
+#     return cat
 
 # # save new catalog to local file
-# def save_new_catalog():
+# def save_new_data_catalog():
 #     url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
 #     cat = None
 #     cat = pd.read_parquet(url)
@@ -94,7 +94,7 @@ def params():
 # import pandas as pd
 # import pkg_resources
 
-# def params():
+# def data_catalog():
 #     data_file = pkg_resources.resource_filename('climatePy', 'data/catalog.csv')
 #     # data_file = pkg_resources.resource_filename('src', 'data/catalog.csv')
 #     data = pd.read_csv(data_file)
