@@ -1299,7 +1299,9 @@ def _resource_grid(
     else: 
         try:
             crs = CRS.from_cf(nc.crs.attrs).to_wkt()
-            crs = CRS.from_cf(nc.crs.attrs).to_proj4()
+            # proj_crs = crs = CRS.from_cf(nc.crs.attrs).to_proj4()
+            # print(f"crs: {crs}")
+            # print(f"proj_crs: {proj_crs}")
         except Exception as e:
             crs = None
             print(f"An exception occurred: {str(e)}")

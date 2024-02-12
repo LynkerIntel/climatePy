@@ -16,7 +16,7 @@ A Python 📦 for getting point and gridded climate data by AOI. `climatePy` is 
 As its stated in the [climateR README](https://github.com/mikejohnson51/climateR#climater):
 climatePy simplifies the steps needed to get climate data into Python. At its core it provides three main things:
 
-1. A climate catalog of over 100,000k datasets from over 2,000 data providers/archives. See (`params()`)
+1. A climate catalog of over 100,000k datasets from over 2,000 data providers/archives. See (`data_catalog()`)
 
 2. A general toolkit for accessing remote and local gridded data files bounded by space, time, and variable constraints (`dap()`, `dap_crop()`, `read_dap_file()`)
 
@@ -64,7 +64,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 
 # load climate catalog
-catalog = climatePy.params()
+catalog = climatePy.data_catalog()
 
 # load example AOI data
 AOI = gpd.read_file('src/data/san_luis_obispo_county.gpkg')

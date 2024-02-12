@@ -1,6 +1,7 @@
 import os
 import platform
 import re
+import warnings
 
 def whatOS():
 	os_name = platform.system().lower()
@@ -166,7 +167,7 @@ def writeDodsrc(netrcFile = getNetrcPath(), dodsrcFile = "./dodsrc"):
 
 
 def checkDodsrc(dodsrcFile = getDodsrcPath(), netrcFile = getNetrcPath()):
-
+# def checkDodsrc(dodsrcFile = getDodsrcPath(), netrcFile = None):
 	"""Check dodsrc file
 
 	Check that there is a dodsrc file with a valid entry for urs.earthdata.nasa.gov.
@@ -180,7 +181,8 @@ def checkDodsrc(dodsrcFile = getDodsrcPath(), netrcFile = getNetrcPath()):
 	"""
 
 	# dodsrcFile = getDodsrcPath()
-	# netrcFile = getNetrcPath()
+	# if netrcFile is None:
+	# 	netrcFile = getNetrcPath()
 
 	# check if netrc file exists
 	if not os.path.exists(netrcFile):
@@ -219,8 +221,10 @@ def check_rc_files(dodsrcFile = getDodsrcPath(), netrcFile = getNetrcPath()):
 	if not checkDodsrc(dodsrcFile, netrcFile):
 		if checkNetrc(netrcFile):
 			print(f"Found Netrc file. Writing dodsrs file to: {getDodsrcPath()}")
+			# warnings.warn(f"Found Netrc file. Writing dodsrs file to: {getDodsrcPath()}")
 			writeDodsrc(netrcFile, dodsrcFile)
 		else:
+			# raise Exception("Netrc file not found. Please run writeNetrc() with earth data credentials.")
 			print("Netrc file not found. Please run writeNetrc() with earth data credentials.")
 			
 # ###########
