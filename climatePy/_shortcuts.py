@@ -828,8 +828,6 @@ def getCHIRPS(
         verbose (bool): print verbose output. Default is False.
     """
 
-    # timeRes = "monthly"
-
     # make sure timeRes is capitalized correctly
     timeRes = " ".join(word.capitalize() for word in timeRes.split())
 
@@ -945,6 +943,9 @@ def getPolaris(
         dictionary of xarray.DataArray(s): xarray DataArray containing climate data
 
     """
+
+    # verbose   = True
+    # varname   = ["mean clay 100-200cm", "p95 theta_s 100-200cm"]
 
     # get matching arguments for climatepy_filter function
     dap_meta = dap.climatepy_dap(

@@ -43,3 +43,5 @@ climatePy/data/*.gpkg
 .dodsrc
 .urs_cookies
 .env
+
+scrap.py

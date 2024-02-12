@@ -1,8 +1,15 @@
 # pytest library
 import pytest
 
-# import climatePy modules
-import climatePy
+# # import climatePy modules
+# import climatePy
+
+# old imports
+# import climatePy._utils as climatePy
+# import climatePy._extract_sites as climatePy
+# import climatePy._dap as climatePy
+import climatePy._shortcuts as climatePy
+# import climatePy._climatepy_filter as climatePy
 
 # data manipulation libs
 import pandas as pd
@@ -695,7 +702,7 @@ def test_getPolaris_case1(AOI):
     
     # Call function to get output
     output = climatePy.getPolaris(AOI, varname, verbose)
-
+    print(f"----- Polaris test case 1 keys: \n > {output.keys()} ----")
     # Assert that the output is a dictionary
     assert type(output) == dict
 
@@ -726,7 +733,8 @@ def test_getPolaris_case2(AOI):
 
     # Assert that the output is a dictionary
     assert type(output) == dict
-
+        
+    print(f"----- Polaris test case 2 keys: \n > {output.keys()} ----")    
     # Assert that the output dictionary has the correct keys
     assert set(output.keys()) == {"p95 theta_s 100-200cm"}
 
@@ -739,9 +747,8 @@ def test_getPolaris_case2(AOI):
     # check CRS
     assert output["p95 theta_s 100-200cm"].crs == "EPSG:4326"
 
-    # check dimensions
+    # # check dimensions
     # assert len(output["p95 theta_s 100-200cm"]) == 3238
-
     # assert output["p95 theta_s 100-200cm"].shape == (3238, 7078)
 
 
@@ -760,6 +767,7 @@ def test_getPolaris_case3(AOI):
     assert type(output) == dict
 
     # Assert that the output dictionary has the correct keys
+    print(f"----- Polaris test case 3 keys: \n > {output.keys()} ----")    
     assert set(output.keys()) == {'mean clay 100-200cm', 'p95 theta_s 100-200cm'}
 
     # Assert that the values of the output dictionary are xarray DataArrays
@@ -774,7 +782,7 @@ def test_getPolaris_case3(AOI):
     assert output["p95 theta_s 100-200cm"].crs == "EPSG:4326"
     assert output["mean clay 100-200cm"].crs == "EPSG:4326"
 
-    # check dimensions
+    # # check dimensions
     # assert len(output["p95 theta_s 100-200cm"]) == 3238
     # assert len(output["mean clay 100-200cm"]) == 3238
     
@@ -977,7 +985,12 @@ def test_get3DEP_case1(AOI):
 
     # Call function to get output
     output = climatePy.get3DEP(AOI, res, verbose)
+    # import matplotlib.pyplot as plt
+    # output.keys()
+    # output['USGS 3DEP_None'].plot()
+    # plt.show()
 
+    print(f"----- 3DEP test case 1 keys: \n > {output.keys()} ----")    
     # Assert that the output is a dictionary
     assert type(output) == dict
 
@@ -1003,6 +1016,8 @@ def test_get3DEP_case2(AOI):
 
     # Call function to get output
     output = climatePy.get3DEP(AOI, res, verbose)
+
+    print(f"----- 3DEP test case 2 keys: \n > {output.keys()} ----")    
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -1030,6 +1045,8 @@ def test_getISRIC_soils_case1(AOI):
     # Call function to get output
     output = climatePy.getISRIC_soils(AOI, varname, verbose)
 
+    print(f"----- getISRIC_soils test case 1 keys: \n > {output.keys()} ----")    
+
     # Assert that the output is a dictionary
     assert type(output) == dict
 
@@ -1056,6 +1073,8 @@ def test_getISRIC_soils_case2(AOI):
 
     # Call function to get output
     output = climatePy.getISRIC_soils(AOI, varname, verbose)
+
+    print(f"----- getISRIC_soils test case 2 keys: \n > {output.keys()} ----")    
 
     # Assert that the output is a dictionary
     assert type(output) == dict
@@ -1106,154 +1125,169 @@ def test_getISRIC_soils_case3(AOI):
     # assert output['Vertisols'].shape == (432, 945)
     # assert output['Gypsisols'].shape == (432, 945)
 
-def test_getCHIRPS_case1(AOI):
-	#  ---- Case 1: Single month CHIRPS ----
-	verbose   = True
-	startDate = "2019-01-01"
-	endDate   = "2019-01-01"
-	varname       = 'precip'
-	timeRes = "daily"
-	
-	# Call function to get output
-	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+# # def test_getCHIRPS_case1(AOI):
+    
+# #     #  ---- Case 1: Single month CHIRPS ----
+# #     verbose   = True
+# #     startDate = "2019-01-01"
+# #     endDate   = "2019-01-01"
+# #     varname   = 'precip'
+# #     timeRes   = "daily"
 
-	# Assert that the output is a dictionary
-	assert type(output) == dict
+# #     # NOTE: CHIRPS data is currently inaccesible due to server issues with the data provider
+# #     # NOTE: This test will fail until the data provider resolves the server issues
+# #     with pytest.raises(Exception):
+# #         # Call function to get output
+# #         output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
 
-	# Assert that the output dictionary has the correct keys
-	assert set(output.keys()) == {"precip"}
-	
-	# Assert that the values of the output dictionary are xarray DataArrays
-	assert isinstance(output["precip"], xr.DataArray)
+# #     # # Assert that the output is a dictionary
+# #     # assert type(output) == dict
 
-	# Assert that the dimensions of the output DataArrays are correct
-	assert output["precip"].dims == ("y", "x", "time")
+# #     # # Assert that the output dictionary has the correct keys
+# #     # assert set(output.keys()) == {"precip"}
 
-	# Assert that the temporal resolution of the output DataArrays is correct
-	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
-	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+# #     # # Assert that the values of the output dictionary are xarray DataArrays
+# #     # assert isinstance(output["precip"], xr.DataArray)
 
-	# check temporal range
-	assert end_date1 - start_date1 == pd.Timedelta("0D")
+# #     # # Assert that the dimensions of the output DataArrays are correct
+# #     # assert output["precip"].dims == ("y", "x", "time")
 
-	assert "precip" in output["precip"].time[0].values.item()
+# #     # # Assert that the temporal resolution of the output DataArrays is correct
+# #     # start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+# #     # end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
 
-	# assert len(output["precip"].time.values) == 1
-	# assert output['precip'].shape == (19, 40, 1)
+# #     # # check temporal range
+# #     # assert end_date1 - start_date1 == pd.Timedelta("0D")
 
-def test_getCHIRPS_case2(AOI):
-	#  ---- Case 2: Multi Month CHIRPS ----
-	verbose   = True
-	startDate = "2019-01-01"
-	endDate   = "2019-03-01"
-	varname       = 'precip'
-	timeRes = "daily"
+# #     # assert "precip" in output["precip"].time[0].values.item()
 
-	# Call function to get output
-	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+# #     # assert len(output["precip"].time.values) == 1
+# #     # assert output['precip'].shape == (19, 40, 1)
 
-	# Assert that the output is a dictionary
-	assert type(output) == dict
+# # def test_getCHIRPS_case2(AOI):
+# #     #  ---- Case 2: Multi Month CHIRPS ----
+# #     verbose   = True
+# #     startDate = "2019-01-01"
+# #     endDate   = "2019-03-01"
+# #     varname   = 'precip'
+# #     timeRes   = "daily"
 
-	# Assert that the output dictionary has the correct keys
-	assert set(output.keys()) == {"precip"}
-	
-	# Assert that the values of the output dictionary are xarray DataArrays
-	assert isinstance(output["precip"], xr.DataArray)
+# #     # NOTE: CHIRPS data is currently inaccesible due to server issues with the data provider
+# #     # NOTE: This test will fail until the data provider resolves the server issues
+# #     with pytest.raises(Exception):
+# #         # Call function to get output
+# #         output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+# #         print(f"----- CHIRPS test case 2 keys: \n > {output.keys()} ----")
 
-	# Assert that the dimensions of the output DataArrays are correct
-	assert output["precip"].dims == ("y", "x", "time")
+# #     # assert type(output) == dict
 
-	# Assert that the temporal resolution of the output DataArrays is correct
-	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
-	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+# #     # # Assert that the output dictionary has the correct keys
+# #     # assert set(output.keys()) == {"precip"}
 
-	# check temporal range
-	assert end_date1 - start_date1 == pd.Timedelta("59D")
+# #     # # Assert that the values of the output dictionary are xarray DataArrays
+# #     # assert isinstance(output["precip"], xr.DataArray)
 
-	assert "precip" in output["precip"].time[0].values.item()
+# #     # # Assert that the dimensions of the output DataArrays are correct
+# #     # assert output["precip"].dims == ("y", "x", "time")
 
-	# assert len(output["precip"].time.values) == 3
-	# assert output['precip'].shape == (19, 40, 3)
+# #     # # Assert that the temporal resolution of the output DataArrays is correct
+# #     # start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+# #     # end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+# #     # # check temporal range
+# #     # assert end_date1 - start_date1 == pd.Timedelta("59D")
+
+# #     # assert "precip" in output["precip"].time[0].values.item()
+
+# # 	# assert len(output["precip"].time.values) == 3
+# # 	# assert output['precip'].shape == (19, 40, 3)
 
 
-def test_getCHIRPS_case3(AOI):
-	#  ---- Case 3: Multi Year Month CHIRPS ----
-	verbose   = True
-	startDate = "2019-01-01"
-	endDate   = "2020-02-01"
-	varname       = 'precip'
-	timeRes = "daily"
+# # def test_getCHIRPS_case3(AOI):
+# #     #  ---- Case 3: Multi Year Month CHIRPS ----
+# #     verbose   = True
+# #     startDate = "2019-01-01"
+# #     endDate   = "2019-01-15"
+# #     varname       = 'precip'
+# #     timeRes = "daily"
 
-	# Call function to get output
-	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+# #     # NOTE: CHIRPS data is currently inaccesible due to server issues with the data provider
+# #     # NOTE: This test will fail until the data provider resolves the server issues
+# #     with pytest.raises(Exception):
+# #         # Call function to get output
+# #         output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
 
-	# Assert that the output is a dictionary
-	assert type(output) == dict
+# #         print(f"----- CHIRPS test case 3 keys: \n > {output.keys()} ----")    
 
-	# Assert that the output dictionary has the correct keys
-	assert set(output.keys()) == {"precip"}
-	
-	# Assert that the values of the output dictionary are xarray DataArrays
-	assert isinstance(output["precip"], xr.DataArray)
+# #     # # Assert that the output is a dictionary
+# #     # assert type(output) == dict
 
-	# Assert that the dimensions of the output DataArrays are correct
-	assert output["precip"].dims == ("y", "x", "time")
+# #     # # Assert that the output dictionary has the correct keys
+# #     # assert set(output.keys()) == {"precip"}
 
-	# Assert that the temporal resolution of the output DataArrays is correct
-	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
-					output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
-	
-	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
-					output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+# #     # # Assert that the values of the output dictionary are xarray DataArrays
+# #     # assert isinstance(output["precip"], xr.DataArray)
 
-	# check temporal range
-	assert end_date1 - start_date1 == pd.Timedelta("396D")
+# #     # # Assert that the dimensions of the output DataArrays are correct
+# #     # assert output["precip"].dims == ("y", "x", "time")
 
-	assert "precip" in output["precip"].time[0].values.item()
+# #     # # Assert that the temporal resolution of the output DataArrays is correct
+# #     # start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
+# #     #                                           output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
 
-	# assert len(output["precip"].time.values) == 14
-	# assert output['precip'].shape == (19, 40, 14)
+# #     # end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
+# #     #                                           output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
 
-def test_getCHIRPS_case4(AOI):
-	#  ---- Case 4: Monthly Multi Year CHIRPS ----
-	verbose   = True
-	startDate = "2019-01-01"
-	endDate   = "2020-02-01"
-	varname       = 'precip'
-	timeRes = "monthly"
+# #     # # check temporal range
+# #     # assert end_date1 - start_date1 == pd.Timedelta("15D")
 
-	# Call function to get output
-	output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
+# #     # assert "precip" in output["precip"].time[0].values.item()
 
-	# Assert that the output is a dictionary
-	assert type(output) == dict
+# #     # assert len(output["precip"].time.values) == 14
+# #     # assert output['precip'].shape == (19, 40, 14)
 
-	# Assert that the output dictionary has the correct keys
-	assert set(output.keys()) == {"precip"}
-	
-	# Assert that the values of the output dictionary are xarray DataArrays
-	assert isinstance(output["precip"], xr.DataArray)
+# # def test_getCHIRPS_case4(AOI):
+# #     #  ---- Case 4: Monthly Multi Year CHIRPS ----
+# #     verbose   = True
+# #     startDate = "2019-01-01"
+# #     endDate   = "2020-02-01"
+# #     varname       = 'precip'
+# #     timeRes = "monthly"
 
-	# Assert that the dimensions of the output DataArrays are correct
-	assert output["precip"].dims == ("y", "x", "time")
+# #     # NOTE: CHIRPS data is currently inaccesible due to server issues with the data provider
+# #     # NOTE: This test will fail until the data provider resolves the server issues
+# #     with pytest.raises(Exception):
+# #         # Call function to get output
+# #         output = climatePy.getCHIRPS(AOI, varname, startDate, endDate, timeRes, verbose)
 
-	# Assert that the temporal resolution of the output DataArrays is correct
-	start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
-					output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
-	
-	end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
-					output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+# #     # # Assert that the output is a dictionary
+# #     # assert type(output) == dict
 
-	# check temporal range
-	assert end_date1 - start_date1 == pd.Timedelta("396D")
-	assert "precip" in output["precip"].time[0].values.item()
+# #     # # Assert that the output dictionary has the correct keys
+# #     # assert set(output.keys()) == {"precip"}
 
-	# calculate number of months
-	months = (end_date1.year - start_date1.year) * 12 + end_date1.month - start_date1.month
-	months = months + 1 if end_date1.day >= end_date1.day else months
+# #     # # Assert that the values of the output dictionary are xarray DataArrays
+# #     # assert isinstance(output["precip"], xr.DataArray)
 
-	# check that number of months in output is correct (within 1 month)
-	assert (len(output["precip"]['time']) == months or
-			len(output["precip"]['time']) + 1 == months or
-			len(output["precip"]['time']) - 1 == months)
+# #     # # Assert that the dimensions of the output DataArrays are correct
+# #     # assert output["precip"].dims == ("y", "x", "time")
+
+# #     # # Assert that the temporal resolution of the output DataArrays is correct
+# #     # start_date1 = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}',
+# #     # 				output["precip"].time[0].values.item()).group(0), "%Y-%m-%d")
+
+# #     # end_date1   = datetime.strptime(re.search(r'\d{4}-\d{2}-\d{2}', 
+# #     # 				output["precip"].time[-1].values.item()).group(0), "%Y-%m-%d")
+
+# #     # # check temporal range
+# #     # assert end_date1 - start_date1 == pd.Timedelta("396D")
+# #     # assert "precip" in output["precip"].time[0].values.item()
+
+# #     # # calculate number of months
+# #     # months = (end_date1.year - start_date1.year) * 12 + end_date1.month - start_date1.month
+# #     # months = months + 1 if end_date1.day >= end_date1.day else months
+
+# #     # # check that number of months in output is correct (within 1 month)
+# #     # assert (len(output["precip"]['time']) == months or
+# #     # 		len(output["precip"]['time']) + 1 == months or
+# #     # 		len(output["precip"]['time']) - 1 == months)

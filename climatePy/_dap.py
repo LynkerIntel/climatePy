@@ -74,11 +74,11 @@ def dap_crop(
 	Returns:
         pd.DataFrame: The cropped catalog entry.
     """
-    
+
     # if a URL is provided, call read_dap_file
     if URL is not None:
 
-        # stash metadata
+        # # stash metadata
         catvar  = catalog["variable"].values
         catmod  = catalog["model"].values
         catens  = catalog["ensemble"].values
@@ -87,11 +87,25 @@ def dap_crop(
         catdesc = catalog['description'].values
         catunits = catalog['units'].values
 
+        # # stash metadata from catalog and set default values if catalog is None
+        # catvar = catalog["variable"].values if catalog is not None and not catalog.empty else np.array(["variable_name"], dtype=object)
+        # catmod = catalog["model"].values if catalog is not None and not catalog.empty else np.array(["model_name"], dtype=object)
+        # catens = catalog["ensemble"].values if catalog is not None and not catalog.empty else np.array(["ensemble_name"], dtype=object)
+        # catsen = catalog["scenario"].values if catalog is not None and not catalog.empty else np.array(["scenario_name"], dtype=object)
+        # catcrs = catalog["crs"].values if catalog is not None and not catalog.empty else np.array(["crs_name"], dtype=object)
+        # catdesc = catalog['description'].values if catalog is not None and not catalog.empty else np.array(["description_name"], dtype=object)
+        # catunits = catalog['units'].values if catalog is not None and not catalog.empty else np.array(["units_name"], dtype=object)
+        
+        # stash varnme for read_dap_file() call
+        cat_varname = catalog["varname"].values if catalog is not None and not catalog.empty else np.array(["varname_name"], dtype=object)
+
         catalog = utils.read_dap_file(
             URL                  = URL, 
             varname              = varname,
             var_spec             = catalog["variable"].values,
             var_spec_long        = catalog["varname"].values,
+            # var_spec             = catvar,
+            # var_spec_long        = cat_varname,
             id                   = "local",
             varmeta              = False, 
             stopIfNotEqualSpaced = True
@@ -116,8 +130,13 @@ def dap_crop(
         if ".." in catalog['duration'].iloc[i]:
             tmp = utils._url_to_resource_time(catalog['URL'].iloc[i], catalog['T_name'].iloc[i])
 
-            catalog["duration"].iloc[i] = tmp['duration']
-            catalog["interval"].iloc[i] = tmp['interval']
+            # New method of indexing and updating values (Avoids SettingWithCopyWarning)
+            catalog.iloc[i, catalog.columns.get_loc('duration')] = tmp['duration']
+            catalog.iloc[i, catalog.columns.get_loc('interval')] = tmp['interval']
+
+            # Old method of indexing and updating values (Creates SettingWithCopyWarning)
+            # catalog["duration"].iloc[i] = tmp['duration']
+            # catalog["interval"].iloc[i] = tmp['interval']
 
     # if no start date and no end date are given
     if startDate is None and endDate is None:
@@ -282,27 +301,48 @@ def dap_crop(
                 ys = [np.argmin(np.abs(Y_coords - out[i].bounds[1])), np.argmin(np.abs(Y_coords - out[i].bounds[3]))]
                 xs = [np.argmin(np.abs(X_coords - out[i].bounds[0])), np.argmin(np.abs(X_coords - out[i].bounds[2]))]
                 
-                # Create DAP X/Y coord ranges
-                catalog["Y"].iloc[i] = f"[{':1:'.join(map(str, sorted(ys)))}]"
-                catalog["X"].iloc[i] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+                # # Create DAP X/Y coord ranges
                 
+                # (NEW METHOD of indexing and updating values) (Avoids SettingWithCopyWarning)
+                catalog.iloc[i, catalog.columns.get_loc('Y')] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                catalog.iloc[i, catalog.columns.get_loc('X')] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+
+                # (OLD METHOD of indexing and updating values) (Creates SettingWithCopyWarning)
+                # catalog["Y"].iloc[i] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                # catalog["X"].iloc[i] = f"[{':1:'.join(map(str, sorted(xs)))}]"
+
+                # catalog.at[catalog.index[i], 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
+                # catalog.at[catalog.index[i], 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
                 # catalog.loc[i, 'Y'] = f"[{':1:'.join(map(str, sorted(ys)))}]"
                 # catalog.loc[i, 'X'] = f"[{':1:'.join(map(str, sorted(xs)))}]"
 
                 # Update "X1", "Xn", "Y1", "Yn" columns based on XY coord sequences
-                catalog["X1"].iloc[i] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                catalog["Xn"].iloc[i] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                catalog["Y1"].iloc[i] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
-                catalog["Yn"].iloc[i] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # (NEW METHOD of indexing and updating values) (Avoids SettingWithCopyWarning)
+                catalog.iloc[i, catalog.columns.get_loc('X1')] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.iloc[i, catalog.columns.get_loc('Xn')] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                catalog.iloc[i, catalog.columns.get_loc('Y1')] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                catalog.iloc[i, catalog.columns.get_loc('Yn')] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
 
-                # catalog.at[i, 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                # catalog.at[i, 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
-                # catalog.at[i, 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
-                # catalog.at[i, 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # (OLD METHOD of indexing and updating values) (Creates SettingWithCopyWarning)
+                # catalog["X1"].iloc[i] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog["Xn"].iloc[i] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog["Y1"].iloc[i] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # catalog["Yn"].iloc[i] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+
+                # catalog.at[catalog.index[i], 'X1'] = min(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog.at[catalog.index[i], 'Xn'] = max(X_coords[[i + 1 if i + 1 < len(X_coords) else i for i in xs]])
+                # catalog.at[catalog.index[i], 'Y1'] = min(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
+                # catalog.at[catalog.index[i], 'Yn'] = max(Y_coords[[i + 1 if i + 1 < len(Y_coords) else i for i in ys]])
 
                 # Calculate number ROWS and COLUMNS
-                catalog["ncols"].iloc[i] = abs(np.diff(xs))[0] + 1
-                catalog["nrows"].iloc[i] = abs(np.diff(ys))[0] + 1
+                # (NEW METHOD of indexing and updating values) (Avoids SettingWithCopyWarning)
+                catalog.iloc[i, catalog.columns.get_loc('ncols')] = abs(np.diff(xs))[0] + 1
+                catalog.iloc[i, catalog.columns.get_loc('nrows')] = abs(np.diff(ys))[0] + 1
+
+                # # (OLD METHOD of indexing and updating values) (Creates SettingWithCopyWarning)
+                # catalog["ncols"].iloc[i] = abs(np.diff(xs))[0] + 1
+                # catalog["nrows"].iloc[i] = abs(np.diff(ys))[0] + 1
+
                 # catalog.at[i, 'ncols'] = abs(np.diff(xs))[0] + 1
                 # catalog.at[i, 'nrows'] = abs(np.diff(ys))[0] + 1
     
@@ -397,8 +437,10 @@ def dap(
         
         Returns: dictionary of xarray.DataArray(s): xarray DataArray containing climate data
         """
-    
 
+        #########
+
+        # check if toptobottom is a boolean, if not, check if all values are NaN
         if not isinstance(toptobottom, bool):
 
             # print("Checking if all toptobottom values are Nan...")
@@ -411,7 +453,6 @@ def dap(
 
                 # print("--> setting toptobottom to False")
                 toptobottom = False
-
         # else:
         # 	print("toptobottom is already a boolean")
         # 	print(f"toptobottom = {toptobottom}")
@@ -420,7 +461,6 @@ def dap(
         if URL is None and catalog is None:
             raise ValueError("URL or catalog must be provided")
         
-
         # check if a single string, if so, make a list of string
         if isinstance(URL, str):
             URL = [URL]
@@ -428,8 +468,10 @@ def dap(
         # if URL is None then only use catalog URL column
         if URL is None:
             URL = catalog.URL.values.tolist()
-
-        else:
+            # URL = tmp.URL.values.tolist()
+        elif isinstance(URL, list) and catalog is not None and not catalog.empty:
+        # else:
+            
             # convert Numpy array to list
             url_lst = catalog.URL.values.tolist()
 
@@ -471,7 +513,20 @@ def dap(
                 toptobottom = toptobottom,
                 verbose     = verbose
                 )
-            
+
+            # # get the vrt catalog features for each URL
+            # vrt_data = vrt_crop_get_v1(
+            #     URL         = URL,
+            #     catalog     = catalog,
+            #     AOI         = AOI,
+            #     grid        = grid,
+            #     varname     = varname,
+            #     start       = start,
+            #     end         = end,
+            #     toptobottom = toptobottom,
+            #     verbose     = verbose
+            #     )
+
             # # get the vrt catalog features for each URL
             # vrt_data = vrt_crop_get2(
             #     URL         = URL,
@@ -605,12 +660,26 @@ def var_to_da(var, dap_row):
     # var = get_data(dap_row)
     # dap_row = dap_row
 
-    # dates = pd.to_datetime(dates)
-    dates = pd.date_range(
-        start   = dap_row['startDate'], 
-        end     = dap_row['endDate'], 
-        periods = dap_row['Tdim']
-        )
+    # # dates = pd.to_datetime(dates)
+    # dates = pd.date_range(
+    #     start   = dap_row['startDate'], 
+    #     end     = dap_row['endDate'], 
+    #     periods = dap_row['Tdim']
+    #     )
+    
+    # catch 0 length (0 indexed) files, (and maybe specify timezone to "UTC" still TBD)
+    if dap_row['startDate'] == dap_row['endDate']:
+        dates = pd.date_range(
+            start = dap_row['startDate'], 
+            end   = dap_row['startDate']
+            )
+        # dates = pd.date_range(start=dap_row['startDate'], end=dap_row['startDate'], tz = "UTC")
+    else:
+        dates = pd.date_range(
+            start   = dap_row['startDate'], 
+            end     = dap_row['endDate'], 
+            periods = dap_row['Tdim']
+            )
 
     # concatenate variable name with date and model info
     name = dap_row['variable'] + '_' + dates.strftime('%Y-%m-%d-%H-%M-%S') + '_' + dap_row['model'] + '_' + dap_row['ensemble'] + '_' + dap_row['scenario']
@@ -1313,21 +1382,345 @@ def crop_vrt2(urls, AOI, verbose = False):
     
     return results
 
+def get_vrt_layer_count(urls, verbose = False):
+    number_layers = {}
+    for url in urls:
+        print("Getting number of layers from VRT URL...")
+        print(f"url: {url}")
+        with rio.open(url) as src:
+            if verbose: 
+                print('Source tags:', src.tags(1))
+                print("Source desc: ", src.descriptions)
+                print("Source profile: ", src.profile)
+            number_layers[url] = src.count
+    
+    return number_layers
+
+def process_vrt_layer(r, xmin, xmax, ymin, ymax, width, height, layer_name, layer_tags, meta_data):
+# def process_vrt_layer(r, xmin, xmax, ymin, ymax, width, height, descriptions_map, tags_map, meta_data):
+    """
+    Process a layer and return a DataArray with appropriate attributes.
+
+    Parameters:
+    - r: Layer data.
+    - xmin, xmax, ymin, ymax: Extents of the layer.
+    - width, height: Width and height of the layer.
+    - descriptions_map: Dictionary mapping layer index to layer name.
+    - tags_map: Dictionary mapping layer index to layer tags.
+    - out_meta: Metadata for the layer.
+
+    Returns:
+    - DataArray with processed layer data and attributes.
+    """
+    raster_band = xr.DataArray(
+        r,
+        coords={
+            'y': np.linspace(ymax, ymin, height, endpoint=False),
+            'x': np.linspace(xmin, xmax, width, endpoint=False),
+        },
+        dims=['y', 'x']
+    )
+
+    # Add layer name to attributes of data array
+    raster_band.attrs['layer_name'] = layer_name
+    raster_band.name = layer_name
+
+    # Add tags to attributes of data array
+    for key, value in layer_tags.items():
+        raster_band.attrs[key] = value
+
+    # Add metadata to attributes of data array
+    for key, value in meta_data.items():
+        raster_band.attrs[key] = value
+
+    return raster_band
+
 def crop_vrt(urls, AOI, verbose = False):
 
+    """Crop a VRT to an AOI
+    
+    Returns:
+        dict: key value pair with the URL as the key and a list of cropped DataArrays as the value.
+    """
+
+    # urls = URL
+    # AOI = AOI
+    # verbose = False
+
+    # if urls is a string, convert to list
+    if isinstance(urls, str):
+        urls = [urls]
+
+    # if isinstance(resource_names, str):
+    #     resource_names = [resource_names]
+    
+    # if resource_names is None:
+    #     resource_names = [f"resource_{i}" for i in urls]
+
+    # # make empty list to store dataarrays
+    # da_lst = []
+        
+    # make an empty dictionary to store dataarrays
+    data_array_map = {}
+
+    # loop over each url
+    for url in urls:
+        if verbose:
+            print("Cropping VRT to AOI...")
+        # print(f"url: {url}")
+        with rio.open(url) as src:
+
+            # get metadata
+            try:
+                out_meta = src.meta
+                # print(f"Succesfully found 'meta' in VRT")
+            except:
+                # print("No 'meta' found in VRT...")
+                out_meta = {}
+
+            # get profile
+            try:
+                out_profile = src.profile
+                # print(f"Succesfully found 'profile' in VRT")
+            except:
+                # print("No 'profile' found in VRT...")
+                out_profile = {}
+
+            # get descriptions
+            try:
+                descriptions = src.descriptions
+                # print(f"Succesfully found 'descriptions' in VRT")
+            except:
+                # print("No 'descriptions' found in VRT...")
+                descriptions = ()
+            
+            # get count
+            try:
+                count = src.count
+                # print(f"Succesfully found 'count' in VRT")
+            except:
+                # print("No 'count' found in VRT...")
+                count = 0
+
+            # all_tags = [src.tags(i) for i in range(0, src.count)]
+
+            # Layer number: src.tags(layer_number)
+            # tags_map = {i: src.tags(i) for i in range(0, src.count)}
+            # descriptions
+                
+            # check data types and get nodata value
+            dtype   = out_profile['dtype']
+            no_data = get_nodata(dtype)
+
+            # Get the CRS of the VRT
+            data_crs = src.crs
+
+            # Get a mapping of tags for each layer
+            tags_map = {}
+            tags_map = {i: src.tags(i) for i in range(0, src.count)}
+
+            # for each tags map value, if "no_data" is a key, replace nodata value with value used as nodata
+            for key, value in tags_map.items():
+                # print(f"Layer {key} tags: {value}")
+
+                if 'nodata' in value:
+                    # print(f"'nodata' key FOUND in tags_map[{key}]: {value['nodata']}")
+                    tags_map[key]['nodata'] = no_data
+                else:
+                    if verbose:
+                        print(f"'nodata' key does NOT exist in tags_map key {key}")
+                # print(f"======")
+
+            # if nodata in out_meta, replace nodata value with value used as nodata
+            if 'nodata' in out_meta:
+                out_meta['nodata'] = no_data
+
+            # check if all layers have descriptions
+            has_descriptions = True if len(descriptions) == count else False
+
+            # if has_descriptions, create a mapping of descriptions for each layer
+            if has_descriptions:
+                descriptions_map = {i: descriptions[i] for i in range(0, src.count)}
+            
+            # Get the CRS of the VRT
+            data_crs = src.crs
+
+            # if verbose: 
+            #     print('Source tags:', src.tags(1))
+            #     print("Source desc: ", src.descriptions)
+            #     print("Source profile: ", src.profile)
+
+            # Reproject the geometry to the CRS of the DataArray
+            AOIv = AOI.to_crs(data_crs, inplace=False)
+
+            # Get the bounding box of your AOI shape
+            bbox = AOIv.geometry.total_bounds
+
+            # Create a polygon object representing the bounding box
+            bounding_box = shapely.geometry.box(bbox[0], bbox[1], bbox[2], bbox[3])
+
+            # if verbose:
+            #     print(" Cropping VRT to bounding box...")
+
+            # out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, invert = False)
+            out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, nodata = no_data, invert = False)
+            # out_meta = src.meta
+            # out_tags = src.tags(1)
+            
+            # close the dataset
+            src.close()
+
+        # TODO: This logic may be a temporary fix, may NOT be the best way to handle the single vs. multibanded VRTs 
+        # temporary layer count
+        if out_image.ndim == 2:
+            layer_count = 1
+        else:
+            layer_count = len(out_image)
+
+        # # temporary layer count
+        # layer_count = len(out_image)
+        # print(f"Out image shape (BEFORE squeeze): {out_image.shape}")
+
+        # Remove dimensions of size 1
+        if out_image.ndim == 3:
+            out_image = out_image.squeeze()
+            # print(f"Out image shape (AFTER squeeze): {out_image.shape}")
+
+        # if image dimensions is STILL 3, after squeeze, then multiband and
+        # the first value in shape is the band count
+        if out_image.ndim == 3:
+            height = out_image.shape[1]
+            width  = out_image.shape[2]
+        else:
+            height = out_image.shape[0]
+            width  = out_image.shape[1]
+            
+        # # get height and width of image
+        # height = out_image.shape[0]
+        # width = out_image.shape[1]
+
+        # get x and y width height indices
+        x_indices = np.arange(width)
+        y_indices = np.arange(height)
+
+        # create meshgrid
+        x_coords, y_coords = np.meshgrid(x_indices, y_indices)
+
+        # get affine transform for coordinates
+        x_coords, y_coords = rio.transform.xy(out_transform, y_coords, x_coords)
+
+        # stack the arrays along a new dimension
+        coords = np.stack((x_coords, y_coords), axis=-1)
+
+        # x and y stacks
+        xn = np.stack((x_coords), axis=-1)
+        yn = np.stack((y_coords), axis=-1)
+
+        # get min and max of x and y
+        xmin = xn.min()
+        xmax = xn.max()
+        ymin = yn.min()
+        ymax = yn.max()
+
+        # empty list to store dataarrays
+        vrt_bands = []
+
+        number_of_bands = count if count else layer_count
+
+        print(f"Number of bands in VRT: {number_of_bands}")
+
+        # if just a single band
+        if number_of_bands == 1:
+            # print(f"Processing single banded VRT layer... {number_of_bands}/{number_of_bands}")
+            
+            # Get the description for the layer if it exists
+
+            layer_name = descriptions_map.get(0, f"layer_0")
+            # layer_name = descriptions_map[list(descriptions_map.keys())[0]]
+            # layer_name = descriptions_map.get(i, f"layer_{i}")
+            # Get the tags for the layer if it exists
+            layer_tags = tags_map.get(0, {layer_name: f"tag_0"})
+
+            # create a DataArray for the layer given the layer data and metadata
+            raster_band = process_vrt_layer(out_image, xmin, xmax, ymin, ymax, width, height, layer_name, layer_tags, out_meta)
+            
+            vrt_bands.append(raster_band)
+        else:
+            # Loop through each layer in the VRT and process it
+            for i in range(number_of_bands):
+            # for i in range(len(out_image)):
+                # r = out_image[i]
+
+                # print(f"Processing layer {i} of {number_of_bands}...")
+                # print(f"Shape: {out_image[i].shape}")
+
+                # Get the description for the layer if it exists
+                layer_name = descriptions_map.get(i, f"layer_{i}")
+
+                # Make sure layer_name is a string and not an NaN or NA or None or anything else
+                layer_name = str(layer_name) if layer_name and layer_name is not None and str(layer_name) not in ["nan", "NA"] else f"layer_{i}"
+
+                # Get the tags for the layer if it exists
+                layer_tags = tags_map.get(i, {layer_name: f"tag_{i}"})
+
+                # print(f"Layer {i} name: {layer_name}")
+
+                raster_band = process_vrt_layer(out_image[i], xmin, xmax, ymin, ymax, width, height, layer_name, layer_tags, out_meta)
+                
+                # add DataArray to list
+                vrt_bands.append(raster_band)
+                
+                # r = out_image[i]
+                # raster_band = xr.DataArray(
+                #     r,
+                #     coords={
+                #         'y': np.linspace(ymax, ymin, height, endpoint=False),
+                #         # 'y': -1*np.linspace(ymin, ymax, height, endpoint=False),
+                #         'x': np.linspace(xmin, xmax, width, endpoint=False),
+                #     },
+                #     dims=['y', 'x']
+                #     )
+                # layer_name = descriptions_map.get(i, f"layer_{i}")
+                # layer_tags = tags_map.get(i, {layer_name : f"tag_{i}"})
+                # raster_band.attrs['layer_name'] = layer_name
+                # raster_band.name = layer_name
+                # for key, value in layer_tags.items():
+                #     raster_band.attrs[key] = value
+                # for key, value in out_meta.items():
+                #     raster_band.attrs[key] = value
+                # vrt_bands.append(raster_band)
+
+        print(f"Adding {url} key to data_array_map with list of {len(vrt_bands)} bands...")
+        
+        # Add the list of DataArrays to the dictionary
+        data_array_map[url] = vrt_bands
+
+        print(f"=====" * 5)
+
+    return data_array_map
+
+def crop_vrt_v1(urls, AOI, verbose = False):
+
     """Crop a VRT to an AOI"""
+
+    # urls = URL
+    # AOI = AOI
+    # verbose = True
 
     # make empty list to store dataarrays
     da_lst = []
 
     # loop over each url
     for url in urls:
+        print("Cropping VRT to AOI...")
+        print(f"url: {url}")
         with rio.open(url) as src:
+
             if verbose: 
                 print('Source tags:', src.tags(1))
                 print("Source desc: ", src.descriptions)
                 print("Source profile: ", src.profile)
-
+                
             # Reproject the geometry to the CRS of the DataArray
             AOIv = AOI.to_crs(src.crs, inplace=False)
 
@@ -1350,6 +1743,7 @@ def crop_vrt(urls, AOI, verbose = False):
 
             # out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, invert = False)
             out_image, out_transform = rio.mask.mask(src, [bounding_box], crop=True, nodata = no_data, invert = False)
+
             out_meta = src.meta
             out_tags = src.tags(1)
 
@@ -1367,13 +1761,11 @@ def crop_vrt(urls, AOI, verbose = False):
             # close the dataset
             src.close()
 
+        # Remove dimensions of size 1
         if out_image.ndim == 3:
             out_image = out_image.squeeze()
-
-        # bb = AOI.geometry.total_bounds
-        # rio.windows.from_bounds(*bb, out_transform)
-
-        # get height and width of image
+            
+        # # get height and width of image
         height = out_image.shape[0]
         width = out_image.shape[1]
 
@@ -1400,9 +1792,6 @@ def crop_vrt(urls, AOI, verbose = False):
         ymin = yn.min()
         ymax = yn.max()
 
-        # # GET CRS
-        # crs = out_meta['crs']
-
         # create DataArray
         r = xr.DataArray(
             out_image,
@@ -1427,7 +1816,263 @@ def crop_vrt(urls, AOI, verbose = False):
 
     return da_lst
 
+def flip_data_array_vertically(data_array):
+    """
+    Flip the given xarray DataArray vertically and return the flipped DataArray.
+
+    Parameters:
+    - data_array: xarray DataArray to be flipped vertically.
+
+    Returns:
+    - Flipped xarray DataArray.
+    """
+
+    # Check if the input data_array is valid
+    if not isinstance(data_array, xr.DataArray):
+        raise ValueError("Input must be an xarray DataArray.")
+
+    # Iterate over each 2D array in the DataArray
+    # Vertically flip the 2D array
+    flipped_data = np.flip(data_array.values, axis=0)
+
+    # Stash tags
+    tags = data_array.attrs
+
+    # Create a new xarray DataArray from flipped NumPy array
+    flipped_array = xr.DataArray(
+        flipped_data,
+        dims=('y', 'x'),
+        coords={'y': data_array.y, 'x': data_array.x}
+    )
+
+    # Add tags back to flipped DataArray
+    flipped_array.attrs = tags
+
+    return flipped_array
+
 def vrt_crop_get(
+        URL         = None, 
+        catalog     = None, 
+        AOI         = None, 
+        grid        = None,
+        varname     = None, 
+        start       = None, 
+        end         = None, 
+        toptobottom = False, 
+        verbose     = False
+        ):
+    
+#     """
+#     Crop and process VRT data (v2 - multiband)
+
+#     Args:
+#         URL (str or list, optional): The URL(s) of the VRT file(s) to open. If not provided, it is extracted from the catalog.
+#         catalog (object, optional): The catalog object containing the URL(s) of the VRT file(s). Required if URL is not provided.
+#         AOI (geopandas.GeoDataFrame, optional): The Area of Interest polygon to crop the VRT data to.
+#         grid (object, optional): The grid object defining the extent and CRS for cropping and reprojection.
+#         varname (str, optional): The name of the variable to select from the VRT data.
+#         start (int, optional): The start index for subsetting bands in the VRT data.
+#         end (int, optional): The end index for subsetting bands in the VRT data.
+#         toptobottom (bool, optional): Whether to flip the data vertically.
+#         verbose (bool, optional): Whether to print informative messages during processing. Default is False
+
+#     Returns:
+#         xr.DataArray: The cropped and processed VRT data.
+
+#     """
+    
+    #########  #########  #########
+    # # ---TESTING HBV ----
+    # URL         = None
+    # grid        = None
+    # varname     = None
+    # start       = None
+    # end         = None
+    # catalog=tmp
+    # AOI=bb
+    # verbose     = True
+    # # ---TESTING HBV ----
+
+    #########  #########  ######### #########  #########  #########
+    if URL is None:
+        URL = catalog.URL.to_list()
+
+    if catalog is not None and not catalog.empty:
+        resource_names = catalog['id'].to_list()
+    else:
+        resource_names = [f"resource_{i}" for i in URL]
+
+    resource_message = '\n > '.join(resource_names)
+
+    # if verbose:
+    #     print("Opening VRT from URL: ", URL)
+    #     print(f"Resource names extracted from catalog: \n > {resource_message}")
+
+    # Area of interest
+    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = False)
+    # vrts = crop_vrt(urls = URL, AOI = AOI, verbose = False)
+    # vrts = crop_vrt2(urls = URL, AOI = AOI, verbose = False)
+    
+    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
+    #                                     AOI  = AOI,
+    #                                     verbose = False
+    #                                     ) for i in URL)
+
+    # check if data needs to be vertically flipped by looping through each key in 
+    # the vrts dictionary  and filtering the catalog for 
+    # the URL and then checking the top to bottom value
+
+    # print(f"Looping through {len(vrts)} VRTs to check if data needs to be flipped vertically for each resource...")
+
+    for url in vrts:
+        # print(f"Checking URL \n > '{url}'")
+        # print(f"Number of bands: {len(vrts[url])}")
+        # print(f"Number of rows in catalog: {len(catalog)}")
+
+        toptobottom_values = catalog[catalog['URL'] == url]['toptobottom'].values[0]
+
+        # print(f"Top to bottom values: {toptobottom_values}")
+
+        # if top to botto mvalues in catalog indicate that the data needs to be flipped vertically
+        if toptobottom_values and not np.isnan(toptobottom_values):
+            
+            # print(f"Flipping data vertically for {len(vrts[url])} bands...")
+
+            # loop through each band in the current "url" key of the vrts dictionary and flip the data vertically
+            for i in range(len(vrts[url])):
+                vrts[url][i] = flip_data_array_vertically(vrts[url][i])
+
+            # print(f"Completed flipping of data from url \n > '{url}'")
+        # else:
+        #     if verbose:
+        #         print("Not flipping data vertically")
+            # vrts[idx] = np.flip(vrts[idx], axis=0)
+    
+    # print(f"Generating output map of {len(vrts)} VRTs...")
+                
+    # make a map of the vrts with each key being the name of the id_band or asset_band
+    output_map = {}
+
+    # loop through all of the vrts keys and for each key, loop through the bands and look at the name, and match it with the names in catalog
+    for url in vrts:
+        # print(f"url: {url}")
+
+        # Subsetting the catalog for the current URL
+        url_catalog = catalog[catalog['URL'] == url]
+
+        # # Conditional used during dev to check if the catalog is empty or a single banded
+        # if not catalog[catalog['URL'] == url].empty and len(vrts[url]) == 1:
+        #     print(f"CATALOG NOT EMPTY and number of bands in vrts[url] == 1")
+        #     # raster_bands = dict(zip(url_catalog['asset'], vrts[url]))
+        # else:
+        #     print(f"URL: {url} is EMPTY OR number of bands in vrts[url] > 1")
+        #     print(f"len(vrts[url]): {len(vrts[url])}")
+
+        if len(vrts[url]) > 1:
+            # print(f"Number of bands in vrts[url] > 1")
+            # print(f"Creating a dictionary key value pair for each band in vrts[url]...")
+            # print(f"Adding all bands as a single key value pair in the output map...")
+
+            # get the ID of the URL from the catalog
+            vrt_keys = url_catalog['id'].fillna(url_catalog['asset']).fillna(url_catalog['URL']).unique().tolist()[0]
+            # vrt_key = url_catalog['id'].unique().tolist()[0]
+
+            # print(f" > {len(vrts[url])} bands added under single key {vrt_keys}...")
+
+            # Generate layer names for each band in the VRT based on the DataArray name, if it exists, otherwise use the band index
+            layer_names = []
+            for i in range(len(vrts[url])):
+                da_name = vrts[url][i].name
+
+                if da_name and da_name is not None:
+                    layer_names.append(da_name)
+                else:
+                    layer_names.append(f"layer_{i}")
+
+            # print(f"Using layer names: \n > {layer_names}")
+
+            # create dictionary of DataArrays with the layer names as the keys and the DataArrays as the values
+            raster_bands = dict(zip(layer_names, vrts[url]))
+
+            # print(f" > Adding {len(vrts[url])} bands added under single key '{vrt_keys}'...")
+            # print(f"Length of raster_band object added: {len(raster_bands)}")
+
+            # Add the dictionary containing band name: DataArray key value pairs to
+            # the output_map with the id/asset/URL as the key
+            output_map[vrt_keys] = raster_bands
+
+        else:
+            # print(f"Number of bands in vrts[url] <= 1")
+            # print(f"Getting variable names from catalog using 'varname', 'variable', or 'asset'...")
+
+            # get the names of the bands from the catalog and fill in missing values with the variable column and then the asset column
+            vrt_keys = url_catalog['varname'].fillna(url_catalog['variable']).fillna(url_catalog['asset']).unique().tolist()
+            # vrt_key = url_catalog['id'].fillna(url_catalog['asset']).fillna(url_catalog['URL']).unique().tolist()
+
+            # print(f"Using 'vrt_keys' names: \n > {vrt_keys}")
+            # print(f"Updating output_map with key {vrt_keys} and value from single length vrts[url]...")
+
+            raster_bands = dict(zip(vrt_keys, vrts[url]))
+            # raster_bands = dict(zip(vrt_keys, tmp))
+
+            # add each key value pair to the output map
+            output_map.update(raster_bands)
+
+        # print(f"Using layer names: \n > {layer_names.tolist()}")
+        
+        # raster_bands = dict(zip(layer_names, vrts[url]))
+        # output_map.update(raster_bands)
+
+        # for band in vrts[url]:
+        #     print(f"band: {band}")
+        # raster_key = vrts[url]
+        # catalog[catalog['URL'] == key]['varname']
+
+    # # loop through all of the vrts keys and for each key, loop through the bands and look at the name, and match it with the names in catalog
+    # for key in vrts:
+    #     print(f"key: {key}")
+        
+    #     # get the ID of the URL from the catalog
+    #     suffix = catalog[catalog['URL'] == key]['id'].unique()
+
+    #     # tmp = params()
+    #     # suffix = tmp[tmp["id"].isna()]['id'].unique()
+
+    #     # if ID column is not NA then use it as the suffix otherwise if the ID is all NA, then use the asset column as the suffix
+    #     if not suffix.isna().all():
+    #         print("Suffix found, using 'id' as suffix")
+    #         # get the values that are not NA, if it fails, convert to list. Get the first value either way
+    #         try:
+    #             suffix = suffix[~suffix.isna()]
+    #         except:
+    #             suffix = suffix.tolist()
+    #         suffix = suffix[0]
+
+    #     # Otherwise, use the 'asset' column as the suffix
+    #     else: 
+    #         print("No 'id' suffix found, using 'asset' as suffix")
+    #         # use asset as suffix
+    #         suffix = catalog[catalog['URL'] == key]['asset'].unique().tolist()
+    #         suffix = suffix[0]
+    #     # get the names of the bands
+    #     layer_names = [f"{suffix}_{vrts[key][i].name}" for i in range(len(vrts[key]))]
+    #     # raster_map = dict(zip(layer_names, vrts[k]))
+    #     # add each key value pair to the output map
+    #     output_map.update(dict(zip(layer_names, vrts[key])))
+            
+    # # create dictionary of DataArrays
+    # vrts = dict(zip(catalog['variable'], vrts))
+
+    # if verbose is True, print out a summary of the VRTs in the 'vrts' dictionary
+    if verbose:
+        vrt_summary(vrt = output_map, dap_catalog = catalog)
+        # vrt_summary(vrt = vrts, dap_catalog = catalog)
+    
+    # print(f"Returning output map of {len(output_map)} VRTs...")
+
+    return output_map
+
+def vrt_crop_get_v1(
         URL         = None, 
         catalog     = None, 
         AOI         = None, 
@@ -1457,6 +2102,9 @@ def vrt_crop_get(
 #         xr.DataArray: The cropped and processed VRT data.
 
 #     """
+    
+    #########  #########  #########
+    #########  #########  ######### #########  #########  #########
 
     if URL is None:
         URL = catalog.URL.to_list()
@@ -1465,21 +2113,22 @@ def vrt_crop_get(
     #     print("Opening VRT from URL: ", URL)
 
     # Area of interest
-    vrts = crop_vrt(urls = URL, AOI = AOI, verbose = False)
+    # vrts = crop_vrt2(urls = URL, AOI = AOI, verbose = False)
+    vrts = crop_vrt_v1(urls = URL, AOI = AOI, verbose = False)
 
-    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt) (urls = [i],
+    # vrts2 = Parallel(n_jobs=-1)(delayed(crop_vrt_v1) (urls = [i],
     #                                     AOI  = AOI,
     #                                     verbose = False
     #                                     ) for i in URL)
 
     # check if data needs to be vertically flipped
     for idx, val in enumerate(catalog['toptobottom']):
-
+        print("idx:", idx, "val: ",val)
         # if verbose:
         #     print("idx:", idx, "val: ",val)
 
         if val and not np.isnan(val):
-
+            
             # if verbose:
             #     print("Flipping data vertically")
 

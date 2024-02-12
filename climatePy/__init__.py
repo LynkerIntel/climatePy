@@ -20,7 +20,7 @@ def params():
     return data
 
 from ._climatepy_filter import climatepy_filter
-from ._dap import dap, dap_crop, dap_get
+from ._dap import dap, dap_crop, dap_get, vrt_crop_get, crop_vrt
 from ._shortcuts import getTerraClim, getTerraClimNormals, getGridMET, getMACA, \
     get3DEP, getLOCA, getPRISM, getPolaris, \
     getBCCA, getLivneh, getLivneh_fluxes, getISRIC_soils, getDaymet, \
@@ -35,6 +35,8 @@ __all__ = [
     'dap',
     'dap_crop',
     'dap_get',
+    'vrt_crop_get', 
+    'crop_vrt', 
     'getTerraClim',
     'getTerraClimNormals', 
     'getGridMET', 
@@ -68,16 +70,23 @@ __all__ = [
 
 ##############################
 
-# # # try and get up to date catalog from GitHub, otherwise use local catalog file
-# def params():
+# # try and get up to date catalog from GitHub, otherwise use local catalog file
+def params():
+    url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
+    cat = None
+    try:
+        cat = pd.read_parquet(url)
+    except Exception:
+        url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
+        cat = pd.read_parquet(url)
+    return cat
+
+# # save new catalog to local file
+# def save_new_catalog():
 #     url = 'https://github.com/mikejohnson51/climateR-catalogs/releases/latest/download/catalog.parquet'
 #     cat = None
-#     try:
-#         cat = pd.read_parquet(url)
-#     except Exception:
-#         url = pkg_resources.resource_filename('climatePy', 'data/catalog.parquet')
-#         cat = pd.read_parquet(url)
-#     return cat
+#     cat = pd.read_parquet(url)
+#     cat.to_parquet(pkg_resources.resource_filename('climatePy', 'data/catalog.parquet'))
 
 ##############################
 ##############################

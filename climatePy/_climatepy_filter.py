@@ -18,8 +18,8 @@ import numpy as np
 from . import _utils as utils
 from . import params
 
-# import climatePy._utils as utils
-# from climatePy import params
+import climatePy._utils as utils
+from climatePy import params
 
 # warnings lib
 import warnings
@@ -153,6 +153,75 @@ def climatepy_filter(
         pd.DataFrame: The filtered data frame.
     """
 
+    ############ version 2 ############
+    # id = "maca_day"
+    # asset      = None
+    # AOI        = None
+    # varname = 'pr'
+    # # ensemble = 'r1i1p1'
+    # # ensemble = 'rt35yf'
+    # ensemble   = None
+    # model = 1
+    # scenario   = None
+    # # scenario = ['rcp45', 'rcp85']
+    # startDate = "2000-01-01"
+    # endDate    = None
+
+    ############ version 3 ############
+    # id="bcca"
+    # asset      = None
+    # varname=['pr', 'tasmax', 'tasmin']
+    # ensemble='r1i1p1'
+    # model=["CSIRO-Mk3-6-0"]
+    # scenario=['rcp45', 'rcp85']
+    # startDate="2079-10-01"
+    # endDate    = None
+    ############ version 4 ############
+    # id="loca"
+    # varname="tasmin"
+    # model='GISS-E2-R'
+    # scenario='rcp45'
+    # startDate="2050-01-01"
+    # ensemble = None
+    # endDate    = None
+    # asset      = None
+    # catalog = params()
+
+    ############ version 5 ############
+    # id="loca"
+    # varname="tasmin"
+    # model=['GISS-E2-R', 'ACCESS1-0']
+    # scenario='rcp45'
+    # startDate="2050-01-01"
+    # ensemble = None
+    # endDate    = None
+    # asset      = None
+    # catalog = params()
+    ############ version 6 ############
+    # id = 'cfsv2_gridmet'
+    # AOI = bb
+    # varname=None
+    # model=None
+    # scenario=None
+    # startDate=None
+    # ensemble = None
+    # endDate    = None
+    # asset      = None
+    # catalog = params()
+    # # catalog.fillna(np.nan, inplace=True)
+
+    # id = 'cfsv2_gridmet'
+    # startDate = "1900-01-01"
+    # endDate = "2022-01-01"
+    # AOI = bb
+    # varname=None
+    # model=None
+    # scenario=None
+    # asset      = None
+    # ensemble = None
+    
+    ###############################################
+
     # initialize variables
     variable, description, duration, e, s, URL = [None]*6
 
@@ -176,7 +245,50 @@ def climatepy_filter(
     if catalog.shape[0] == 0:
         raise Exception('no data to filter.')
     
-    # 1. model filter
+    # Old order is Model -> varname -> scenario -> date -> ensemble -> AOI
+    # New order is Varname -> Scenario -> model -> date -> ensemble -> AOI
+
+    # 1. varname filter 
+    if varname is not None:
+        
+        # make sure varname is a list type
+        if isinstance(varname, str):
+            varname = [varname]
+        
+        u = catalog['variable'].unique()
+        
+        # if all elements in varname are in u, filter down to varname
+        if all(elem in u for elem in varname):
+            catalog = catalog.loc[catalog['varname'].isin(varname) | catalog['variable'].isin(varname)]
+        else:
+            bad = list(set(varname) - set(u))
+            m = catalog[['variable', 'description', 'units']].drop_duplicates()
+            message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['variable'] + ' [' + m['units'] + '] (' + m['description'] + ')' }"
+            raise Exception(message)
+    
+    # 2. scenario filter
+    if scenario is not None:
+
+        # Check if "historical" is in the catalog, if so, add "historical" to the scenario list
+        if "historical" in catalog["scenario"].unique():
+            if isinstance(scenario, str):
+                scenario = ["historical", scenario]
+            else:
+                scenario = ["historical"] + scenario
+                # scenario.extend(["historical"])
+
+            # scenario = ["historical", scenario]
+                
+        # if scenario is not None, filter the catalog by the scenario, depending if the scenario is a string or a list
+        if scenario is not None:
+            if isinstance(scenario, str):
+                catalog = catalog[catalog['scenario'].str.contains(scenario, na=False)]
+                # catalog = catalog[catalog['scenario'].str.contains(scenario)]
+            elif isinstance(scenario, list):
+                catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario), na=False)]
+                # catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
+    
+    # 3. model filter
     if model is not None:
 
         # unique models
@@ -214,29 +326,11 @@ def climatepy_filter(
                 m = catalog[['model', 'ensemble']].drop_duplicates()
                 message = f"'{bad}' not avaliable model for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
                 raise Exception(message)
-
-    # 2. varname filter 
-    if varname is not None:
-        
-        # make sure varname is a list type
-        if isinstance(varname, str):
-            varname = [varname]
-        
-        u = catalog['variable'].unique()
-        
-        # if all elements in varname are in u, filter down to varname
-        if all(elem in u for elem in varname):
-            catalog = catalog.loc[catalog['varname'].isin(varname) | catalog['variable'].isin(varname)]
-        else:
-            bad = list(set(varname) - set(u))
-            m = catalog[['variable', 'description', 'units']].drop_duplicates()
-            message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['variable'] + ' [' + m['units'] + '] (' + m['description'] + ')' }"
-            raise Exception(message)
-    
-    # 3.date filter
+            
+    # 4. date filter
     if startDate is not None:
         endDate = startDate if endDate is None else endDate
-        
+
         # convert startDate and endDate to datetime
         tmp = (catalog
         .pipe(lambda x: x.assign(s = x['duration'].str.split('/').str[0], 
@@ -248,45 +342,115 @@ def climatepy_filter(
             .query('e >= @startDate and s <= @endDate')
             .assign(duration_str = lambda x: x['duration'].astype(str) + " [" + x['scenario'] + "]")
             )
-        # if no data is found, raise an exception
+        
+        # if no data is found, raise an exception and provide the user with a message of valid date ranges
         if tmp.empty:
-            duration_str = "\n\t>".join(tmp['duration_str'])
-            raise ValueError(f"Valid Date Range(s) includes: {duration_str}")
+            # Create a copy of the dataframe to print out the valid date ranges if the date range is not found
+            msg_catalog = catalog.copy()
+            msg_catalog["scenario"] = msg_catalog["scenario"].fillna("NA scenario", inplace = False)
+            msg_catalog["duration_str"] = msg_catalog["duration"].astype(str) + " [" + msg_catalog["scenario"].astype(str) + "]"
+            
+            # use only the first 10 values in duration_str and then add a message to the end stating how many others are avaliable
+            if len(msg_catalog['duration_str']) > 10:
+                duration_str = "\n\t> ".join(msg_catalog['duration_str'][:10])
+                duration_str += f"\n\t ... and {len(msg_catalog['duration_str']) - 10} more"
+            else:
+                duration_str = "\n\t>".join(msg_catalog['duration_str'])
+
+            raise ValueError(f"Valid Date Range(s) includes:\n\t> {duration_str}")
         else:
             catalog = tmp.drop(['s', 'e'], axis = 1)
             
-    # 4. scenario filter
-    if scenario is not None:
-        if "historical" in catalog["scenario"].unique():
-            scenario = ["historical", scenario]
-
-        if scenario is not None:
-            if isinstance(scenario, str):
-                catalog = catalog[catalog['scenario'].str.contains(scenario, na=False)]
-                # catalog = catalog[catalog['scenario'].str.contains(scenario)]
-            elif isinstance(scenario, list):
-                catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario), na=False)]
-                # catalog = catalog[catalog['scenario'].str.contains('|'.join(scenario))]
+    # TODO: Note to self: working on applying table() method from R to pandas
 
     # 5. ensemble filter
-    if ensemble is not None:
-        if isinstance(ensemble, str):
+    if ensemble is None:
+        ensemble = 1
+
+    # if data has ANY non NA ensemble values in the catalog, then continue with ensemble filtering
+    ensemble_flag = any(catalog['ensemble'].notna())
+
+    # if there exists a non NA ensemble value in the catalog
+    if ensemble_flag:
+
+        # convert single string ensemble values to a list of strings
+        if isinstance(ensemble, (str)):
             ensemble = [ensemble]
 
-        # if ensemble is not None and there are more or less ensembles than there are models, groupby model and ensemble:
-        if model is not None and len(ensemble) != len(model):
-            catalog = (catalog
-                        .groupby(['model', 'ensemble'])
-                        .first()
-                        .reset_index()
-                        )
+        # create a temporary list of ensemble values if ensemble is a single integer or float value
+        # Avoids TypeError: 'int' object is not iterable in conditions below
+        tmp_ensemble = [ensemble] if isinstance(ensemble, (int, float)) else ensemble
+
+        # check if ALL of the ensemble values are in the catalog ensemble column 
+        # OR if ensemble is not a number (str or list of str) 
+        if all(i in catalog["ensemble"].unique() for i in tmp_ensemble) or not isinstance(ensemble, (int, float)):
+        # if all(i in catalog["ensemble"].unique() for i in ensemble) or not isinstance(ensemble, (int, float)):
+            
+            # filet catalog ensemble column by list of ensemble values
+            catalog = catalog[catalog['ensemble'].isin(tmp_ensemble)]
+
+        elif isinstance(ensemble, (int, float)):
+            
+            # # count up model/ensemble combinations
+            # model_count = catalog['model'].value_counts()
+            # ensemble_count = catalog['ensemble'].value_counts()
+
+            # count up model/ensemble combinations
+            freq_table = pd.crosstab(catalog['model'], catalog['ensemble'])
+
+            # check if any model has more than one ensemble
+            cond = (freq_table > ensemble).any().any()
+
+            # # check if any of the models have grouping varaibles that are ALL EMPTY, and DON'T group by those
+            groupings = ['id', 'variable', 'model', 'scenario']
+            group_vars = [i for i in groupings if not catalog[i].isna().all()]
+            
+            # get sample of ensembles for each id/variable/model/scenario combination
+            # Number of rows per group sample is equal to ensemble if its an integer, else its equal to the length of ensemble (list)
+            # if columns in groupings are NOT ALL EMPTY, group by those columns and sample ensemble
+            if group_vars:
+                catalog = (catalog
+                            .groupby(group_vars)
+                            .sample(n = ensemble if isinstance(ensemble, int) else len(ensemble))
+                            )
+            # if no variables were determined to be NOT empty, then group by just ensemble and get the first ensemble
+            else:
+                # ensemble_groupings = ['id', 'variable', 'model', 'scenario', 'ensemble']
+                # ensemble_groups = [i for i in ensemble_groupings if not catalog[i].isna().all()]
+                ensemble_groups = ["ensemble"]
+                catalog = (catalog
+                            .groupby(ensemble_groups)
+                            .sample(n = ensemble if isinstance(ensemble, int) else len(ensemble))
+                            # .first()
+                            # .reset_index()
+                            )
+
+            # catalog.groupby(['id', 'variable', 'model', 'scenario']).sample(n = ensemble if isinstance(ensemble, int) else len(ensemble))
+            # catalog = catalog.sample(n = ensemble if isinstance(ensemble, int) else len(ensemble))
+            
+            # Old method - Slice off the first ensemble if there are more than one ensemble (old behavior)
+            # catalog = (catalog
+            #             .groupby(['model', 'ensemble'])
+            #             .first()
+            #             .reset_index()
+            #             )
+
+            # WARN user if multiple ensembles avaliable (if ensemble is 1, i.e. None) and, 
+            # there are more than one ensemble/model combination
+            if ensemble == 1 and cond:
+                subset_cat = catalog[['model', 'scenario', 'ensemble']].drop_duplicates()
+                message = subset_cat['model'] + " [" + subset_cat['scenario'] + "] [" + subset_cat['ensemble'] + "]"
+                message = "\n\t> ".join(message)
+                warnings.warn(f"Multiple ensembles available per model. Since `ensemble = None`, we default to:\n\t> {message}")
+                # print(f"Multiple ensembles available per model. Since `ensemble = None`, we default to:\n\t> {message}")
+
         else:
             # unique ensembles
             u = catalog['ensemble'].unique()
 
             # if there are more than one ensemble and ensemble is NULL, default to the first ensemble
             if len(u) > 1 and ensemble is None:
-                warnings.warn(f"There are {len(u)} ensembles available. Since ensemble was left NULL, we default to {u[0]}.", UserWarning)
+                warnings.warn(f"There are {len(u)} ensembles available. Since ensemble was left as None, we default to {u[0]}.")
                 catalog = catalog[catalog['ensemble'].isin([u[0]])]
             elif ensemble is None:
                 catalog = catalog
@@ -298,7 +462,47 @@ def climatepy_filter(
                     m = catalog[['model', 'ensemble']].drop_duplicates()
                     message = f"'{bad}' not avaliable ensemble for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
                     raise Exception(message)
-            
+                
+    # # 5. ensemble filter
+    # if ensemble is not None:
+    #     if isinstance(ensemble, str):
+    #         ensemble = [ensemble]
+    #     # if all of ensemble is NULL/NA/NONE AND model is NOT NULL/NA/NONE, filter catalog models by model
+    #     if model is not None and ensemble is None:
+    #         # filter catalog by model
+    #         catalog = catalog[catalog['model'].isin(model)]
+                
+    ### (old ensemble filter) ###
+    # if ensemble is not None:
+    #     if isinstance(ensemble, str):
+    #         ensemble = [ensemble]
+
+    #     # if ensemble is not None and there are more or less ensembles than there are models, groupby model and ensemble:
+    #     if model is not None and len(ensemble) != len(model):
+    #         catalog = (catalog
+    #                     .groupby(['model', 'ensemble'])
+    #                     .first()
+    #                     .reset_index()
+    #                     )
+    #     else:
+    #         # unique ensembles
+    #         u = catalog['ensemble'].unique()
+
+    #         # if there are more than one ensemble and ensemble is NULL, default to the first ensemble
+    #         if len(u) > 1 and ensemble is None:
+    #             warnings.warn(f"There are {len(u)} ensembles available. Since ensemble was left NULL, we default to {u[0]}.", UserWarning)
+    #             catalog = catalog[catalog['ensemble'].isin([u[0]])]
+    #         elif ensemble is None:
+    #             catalog = catalog
+    #         else:
+    #             if all(item in u for item in ensemble):
+    #                 catalog = catalog[catalog['ensemble'].isin(ensemble)]
+    #             else:
+    #                 bad = list(set(ensemble) - set(u))
+    #                 m = catalog[['model', 'ensemble']].drop_duplicates()
+    #                 message = f"'{bad}' not avaliable ensemble for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['model'] + ' [' + m['ensemble'] + ']' }"
+    #                 raise Exception(message)
+                
     # # # If AOI is a shapely geometry, convert AOI into GeoPandas dataframe 
     # if isinstance(AOI, (shapely.geometry.point.Point, 
     #         shapely.geometry.multipoint.MultiPoint,
@@ -306,7 +510,6 @@ def climatepy_filter(
     #         shapely.geometry.multilinestring.MultiLineString, 
     #         shapely.geometry.polygon.Polygon, 
     #         shapely.geometry.multipolygon.MultiPolygon)):
-        
     #     # convert shapely geometry to geopandas dataframe
     #     AOI = utils.shapely_to_gpd(AOI)
 
@@ -319,7 +522,10 @@ def climatepy_filter(
             catalog = catalog,
             AOI     = AOI
             )
-        
+
+    if len(catalog) == 0:
+        raise Exception("Configuration not found.")
+
     # remove duplicates
     catalog = catalog[~catalog.drop(['URL'], axis=1).duplicated()]
 
