@@ -21,6 +21,7 @@ from . import data_catalog
 # import climatePy._utils as utils
 # from climatePy import catalog
 
+
 # warnings lib
 import warnings
 
@@ -166,7 +167,7 @@ def climatepy_filter(
     # # scenario = ['rcp45', 'rcp85']
     # startDate = "2000-01-01"
     # endDate    = None
-    ###############################################
+    #################################
 
     # initialize variables
     variable, description, duration, e, s, URL = [None]*6
