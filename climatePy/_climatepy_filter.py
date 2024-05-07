@@ -210,8 +210,14 @@ def climatepy_filter(
         else:
             bad = list(set(varname) - set(u))
             m = catalog[['variable', 'description', 'units']].drop_duplicates()
-            message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['variable'] + ' [' + m['units'] + '] (' + m['description'] + ')' }"
-            raise Exception(message)
+            suggested_vals = list(zip(m['variable'].tolist(), m['description'].tolist(), m['units'].tolist()))
+            suggested_strs = "\n\t> " +  "\n\t> ".join([f"{i[0]} [{i[2]}] ({i[1]})" for i in suggested_vals])
+            message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: {suggested_strs}"
+
+            # message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + m['variable'] + ' [' + m['units'] + '] (' + m['description'] + ')' }"
+            # message = f"'{bad}' not avaliable parameter for '{catalog.iloc[0]['id']}'. Try: \n\t{'> ' + str(m['variable']) + ' [' + str(m['units']) + '] (' + str(m['description']) + ')' }"
+            
+            raise ValueError(message)
     
     # 2. scenario filter
     if scenario is not None:
