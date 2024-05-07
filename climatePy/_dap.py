@@ -570,7 +570,7 @@ def dap(
             dap_data = dap_get(
                 dap_data = dap_data,
                 dopar    = dopar,
-                verbose  = False
+                verbose  = verbose
                 )
             
             return dap_data
@@ -820,6 +820,7 @@ def go_get_dap_data(dap_row):
         else:
             raise Exception("dap_to_local() not avaliable, yet, dataset URL must be in http format")
     except Exception as e:
+        print(e)
         return dap_row["URL"]
     
     return x
